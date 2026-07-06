@@ -132,20 +132,20 @@ class SpoolmanFilamentCardEditor extends LitElement {
   renderTextForm(key, label) {
     const schema = [
       {
-        name: key,
-        selector: {
-          text: {},
-        },
+        name: "value",
+        selector: { text: {} },
       },
     ];
-
+  
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${{ [key]: this._config[key] ?? DEFAULT_CONFIG[key] ?? "" }}
+        .data=${{ value: this._config[key] ?? DEFAULT_CONFIG[key] ?? "" }}
         .schema=${schema}
         .computeLabel=${() => label}
-        @value-changed=${event => this.handleFormValueChanged(event)}
+        @value-changed=${event => {
+          this.updateConfigValue(key, event.detail.value?.value ?? "");
+        }}
       ></ha-form>
     `;
   }
@@ -153,7 +153,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
   renderNumberForm(key, label) {
     const schema = [
       {
-        name: key,
+        name: "value",
         selector: {
           number: {
             mode: "box",
@@ -163,14 +163,16 @@ class SpoolmanFilamentCardEditor extends LitElement {
         },
       },
     ];
-
+  
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${{ [key]: this._config[key] ?? DEFAULT_CONFIG[key] }}
+        .data=${{ value: this._config[key] ?? DEFAULT_CONFIG[key] }}
         .schema=${schema}
         .computeLabel=${() => label}
-        @value-changed=${event => this.handleFormValueChanged(event)}
+        @value-changed=${event => {
+          this.updateConfigValue(key, event.detail.value?.value);
+        }}
       ></ha-form>
     `;
   }
@@ -178,20 +180,20 @@ class SpoolmanFilamentCardEditor extends LitElement {
   renderBooleanForm(key, label) {
     const schema = [
       {
-        name: key,
-        selector: {
-          boolean: {},
-        },
+        name: "value",
+        selector: { boolean: {} },
       },
     ];
-
+  
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${{ [key]: this._config[key] !== false }}
+        .data=${{ value: this._config[key] !== false }}
         .schema=${schema}
         .computeLabel=${() => label}
-        @value-changed=${event => this.handleFormValueChanged(event)}
+        @value-changed=${event => {
+          this.updateConfigValue(key, event.detail.value?.value);
+        }}
       ></ha-form>
     `;
   }
@@ -199,7 +201,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
   renderSelectForm(key, label, options) {
     const schema = [
       {
-        name: key,
+        name: "value",
         selector: {
           select: {
             mode: "dropdown",
@@ -211,29 +213,33 @@ class SpoolmanFilamentCardEditor extends LitElement {
         },
       },
     ];
-
+  
     return html`
       <ha-form
         .hass=${this.hass}
-        .data=${{ [key]: this._config[key] ?? DEFAULT_CONFIG[key] }}
+        .data=${{ value: this._config[key] ?? DEFAULT_CONFIG[key] }}
         .schema=${schema}
         .computeLabel=${() => label}
-        @value-changed=${event => this.handleFormValueChanged(event)}
+        @value-changed=${event => {
+          const value = event.detail.value?.value;
+          if (value !== undefined) {
+            this.updateConfigValue(key, value);
+          }
+        }}
       ></ha-form>
     `;
   }
 
-  handleFormValueChanged(event) {
-    const value = event.detail.value || {};
+  updateConfigValue(key, value) {
     const config = {
       ...this._config,
-      ...value,
+      [key]: value,
     };
-
-    if ("bar_direction" in value) {
+  
+    if (key === "bar_direction") {
       this.normalizePositions(config);
     }
-
+  
     this.setAndDispatchConfig(config);
   }
 
