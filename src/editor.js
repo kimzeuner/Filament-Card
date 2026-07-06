@@ -1,213 +1,192 @@
-import { DEFAULT_CONFIG } from "./const.js";
+import { LitElement, html, css } from "lit";
+import { DEFAULT_CONFIG, EDITOR_TYPE } from "./const.js";
 
-class SpoolmanFilamentCardEditor extends HTMLElement {
+class SpoolmanFilamentCardEditor extends LitElement {
+  static properties = {
+    hass: {},
+    config: {},
+  };
+
+  static styles = css`
+    .form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--secondary-text-color);
+      margin-top: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--divider-color);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .section:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    ha-textfield,
+    ha-select,
+    textarea {
+      width: 100%;
+    }
+
+    textarea {
+      min-height: 90px;
+      box-sizing: border-box;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color);
+      color: var(--primary-text-color);
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .hint {
+      color: var(--secondary-text-color);
+      font-size: 12px;
+      margin-top: -8px;
+    }
+
+    ha-formfield {
+      display: block;
+    }
+  `;
+
   setConfig(config) {
     this.config = {
       ...DEFAULT_CONFIG,
       ...config,
     };
-
-    if (!this._rendered) {
-      this.render();
-      this._rendered = true;
-    }
-  }
-
-  set hass(hass) {
-    this._hass = hass;
   }
 
   render() {
-    if (!this.config) return;
+    if (!this.config) return html``;
 
-    this.innerHTML = `
-      <style>
-        .form {
-          display: grid;
-          gap: 12px;
-        }
-
-        label {
-          display: grid;
-          gap: 4px;
-          font-size: 14px;
-        }
-
-        input,
-        select,
-        textarea {
-          width: 100%;
-          box-sizing: border-box;
-          padding: 8px;
-          border-radius: 6px;
-          border: 1px solid var(--divider-color);
-          background: var(--card-background-color);
-          color: var(--primary-text-color);
-        }
-
-        textarea {
-          min-height: 90px;
-          resize: vertical;
-          font-family: inherit;
-        }
-
-        .checkbox {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .checkbox input {
-          width: auto;
-        }
-
-        .section {
-          font-weight: 600;
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px solid var(--divider-color);
-        }
-
-        .section:first-child {
-          margin-top: 0;
-          padding-top: 0;
-          border-top: none;
-        }
-      </style>
-
+    return html`
       <div class="form">
         <div class="section">General</div>
 
-        <label>
-          Title
-          <input name="title" value="${this.config.title ?? ""}">
-        </label>
+        <ha-textfield
+          label="Title"
+          .value=${this.config.title ?? ""}
+          @input=${event => this._valueChanged("title", event.target.value)}
+        ></ha-textfield>
 
-        <label class="checkbox">
-          <input name="hide_archived" type="checkbox" ${this.config.hide_archived !== false ? "checked" : ""}>
-          Hide archived spools
-        </label>
+        ${this._switch("hide_archived", "Hide archived spools")}
 
         <div class="section">Grouping</div>
 
-        <label>
-          Group by
-          <select name="group_by">
-            <option value="material" ${this.selected("group_by", "material")}>Material</option>
-            <option value="color" ${this.selected("group_by", "color")}>Color</option>
-            <option value="vendor" ${this.selected("group_by", "vendor")}>Vendor</option>
-            <option value="none" ${this.selected("group_by", "none")}>Don't group</option>
-          </select>
-        </label>
+        ${this._select("group_by", "Group by", [
+          ["material", "Material"],
+          ["color", "Color"],
+          ["vendor", "Vendor"],
+          ["none", "Don't group"],
+        ])}
 
-        ${this.config.group_by !== "none" ? `
+        ${this.config.group_by !== "none" ? html`
           <label>
-            Group order
-            <textarea name="group_order">${this.groupOrderValue()}</textarea>
+            <div class="hint">Group order, one entry per line. Empty = automatic sorting.</div>
+            <textarea
+              .value=${this._groupOrderValue()}
+              @change=${event => this._groupOrderChanged(event)}
+            ></textarea>
           </label>
 
-          <label>
-            Group sort by
-            <select name="group_sort_by">
-              <option value="name" ${this.selected("group_sort_by", "name")}>Name</option>
-              <option value="total_remaining_weight" ${this.selected("group_sort_by", "total_remaining_weight")}>Total remaining weight</option>
-              <option value="max_remaining_weight" ${this.selected("group_sort_by", "max_remaining_weight")}>Max remaining weight</option>
-              <option value="spool_count" ${this.selected("group_sort_by", "spool_count")}>Spool count</option>
-            </select>
-          </label>
+          ${this._select("group_sort_by", "Group sort by", [
+            ["name", "Name"],
+            ["total_remaining_weight", "Total remaining weight"],
+            ["max_remaining_weight", "Max remaining weight"],
+            ["spool_count", "Spool count"],
+          ])}
 
-          <label>
-            Group sort direction
-            <select name="group_sort_direction">
-              <option value="asc" ${this.selected("group_sort_direction", "asc")}>Ascending</option>
-              <option value="desc" ${this.selected("group_sort_direction", "desc")}>Descending</option>
-            </select>
-          </label>
+          ${this._select("group_sort_direction", "Group sort direction", [
+            ["asc", "Ascending"],
+            ["desc", "Descending"],
+          ])}
 
-          <label>
-            Group icon
-            <input name="group_icon" value="${this.config.group_icon ?? "mdi:printer-3d-nozzle"}">
-          </label>
+          <ha-textfield
+            label="Group icon"
+            .value=${this.config.group_icon ?? "mdi:printer-3d-nozzle"}
+            @input=${event => this._valueChanged("group_icon", event.target.value)}
+          ></ha-textfield>
 
-          <label class="checkbox">
-            <input name="show_group_title" type="checkbox" ${this.config.show_group_title !== false ? "checked" : ""}>
-            Show group title
-          </label>
+          ${this._switch("show_group_title", "Show group title")}
         ` : ""}
 
         <div class="section">Sorting</div>
 
-        <label>
-          Sort by
-          <select name="sort_by">
-            <option value="remaining_weight" ${this.selected("sort_by", "remaining_weight")}>Remaining weight</option>
-            <option value="filament_name" ${this.selected("sort_by", "filament_name")}>Filament name</option>
-            <option value="filament_material" ${this.selected("sort_by", "filament_material")}>Material</option>
-            <option value="filament_vendor_name" ${this.selected("sort_by", "filament_vendor_name")}>Vendor</option>
-            <option value="filament_color_hex" ${this.selected("sort_by", "filament_color_hex")}>Color</option>
-          </select>
-        </label>
+        ${this._select("sort_by", "Sort by", [
+          ["remaining_weight", "Remaining weight"],
+          ["filament_name", "Filament name"],
+          ["filament_material", "Material"],
+          ["filament_vendor_name", "Vendor"],
+          ["filament_color_hex", "Color"],
+        ])}
 
-        <label>
-          Sort direction
-          <select name="sort_direction">
-            <option value="asc" ${this.selected("sort_direction", "asc")}>Ascending</option>
-            <option value="desc" ${this.selected("sort_direction", "desc")}>Descending</option>
-          </select>
-        </label>
+        ${this._select("sort_direction", "Sort direction", [
+          ["asc", "Ascending"],
+          ["desc", "Descending"],
+        ])}
 
         <div class="section">Appearance</div>
 
-        <label>
-          Bar direction
-          <select name="bar_direction">
-            <option value="vertical" ${this.selected("bar_direction", "vertical")}>Vertical</option>
-            <option value="horizontal" ${this.selected("bar_direction", "horizontal")}>Horizontal</option>
-          </select>
-        </label>
+        ${this._select("bar_direction", "Bar direction", [
+          ["vertical", "Vertical"],
+          ["horizontal", "Horizontal"],
+        ])}
 
-        <label>
-          Name position
-          <select name="name_position">
-            ${this.namePositionOptions()}
-          </select>
-        </label>
+        ${this._select("name_position", "Name position", this._namePositionOptions())}
 
-        <label>
-          Value position
-          <select name="value_position">
-            ${this.valuePositionOptions()}
-          </select>
-        </label>
+        ${this._select("value_position", "Value position", this._valuePositionOptions())}
 
-        <label>
-          Max weight fallback
-          <input name="max_weight" type="number" value="${this.config.max_weight ?? 1000}">
-        </label>
+        <ha-textfield
+          label="Max weight fallback"
+          type="number"
+          .value=${String(this.config.max_weight ?? 1000)}
+          @input=${event => this._valueChanged("max_weight", Number(event.target.value))}
+        ></ha-textfield>
 
-        <label class="checkbox">
-          <input name="show_name" type="checkbox" ${this.config.show_name !== false ? "checked" : ""}>
-          Show name
-        </label>
-
-        <label class="checkbox">
-          <input name="use_filament_color" type="checkbox" ${this.config.use_filament_color !== false ? "checked" : ""}>
-          Use filament color
-        </label>
+        ${this._switch("show_name", "Show name")}
+        ${this._switch("use_filament_color", "Use filament color")}
       </div>
     `;
-
-    this.querySelectorAll("input, select, textarea").forEach(element => {
-      element.addEventListener("change", event => this.valueChanged(event));
-    });
   }
 
-  selected(key, value) {
-    return (this.config[key] ?? DEFAULT_CONFIG[key]) === value ? "selected" : "";
+  _select(key, label, options) {
+    return html`
+      <ha-select
+        label=${label}
+        .value=${this.config[key] ?? DEFAULT_CONFIG[key]}
+        @selected=${event => this._valueChanged(key, event.target.value)}
+        @closed=${event => event.stopPropagation()}
+      >
+        ${options.map(([value, text]) => html`
+          <mwc-list-item .value=${value}>${text}</mwc-list-item>
+        `)}
+      </ha-select>
+    `;
   }
 
-  namePositionOptions() {
-    const options = this.config.bar_direction === "horizontal"
+  _switch(key, label) {
+    return html`
+      <ha-formfield label=${label}>
+        <ha-switch
+          .checked=${this.config[key] !== false}
+          @change=${event => this._valueChanged(key, event.target.checked)}
+        ></ha-switch>
+      </ha-formfield>
+    `;
+  }
+
+  _namePositionOptions() {
+    return this.config.bar_direction === "horizontal"
       ? [
           ["top", "Top"],
           ["bottom", "Bottom"],
@@ -218,14 +197,10 @@ class SpoolmanFilamentCardEditor extends HTMLElement {
           ["top", "Top"],
           ["bottom", "Bottom"],
         ];
-
-    return options.map(([value, label]) =>
-      `<option value="${value}" ${this.selected("name_position", value)}>${label}</option>`
-    ).join("");
   }
 
-  valuePositionOptions() {
-    const options = this.config.bar_direction === "horizontal"
+  _valuePositionOptions() {
+    return this.config.bar_direction === "horizontal"
       ? [
           ["left", "Left"],
           ["center", "Center"],
@@ -236,40 +211,48 @@ class SpoolmanFilamentCardEditor extends HTMLElement {
           ["center", "Center"],
           ["bottom", "Bottom"],
         ];
-
-    return options.map(([value, label]) =>
-      `<option value="${value}" ${this.selected("value_position", value)}>${label}</option>`
-    ).join("");
   }
 
-  groupOrderValue() {
-    if (!Array.isArray(this.config.group_order)) return "";
-    return this.config.group_order.join("\n");
+  _groupOrderValue() {
+    return Array.isArray(this.config.group_order)
+      ? this.config.group_order.join("\n")
+      : "";
   }
 
-  valueChanged(event) {
-    const target = event.target;
-    const key = target.name;
+  _groupOrderChanged(event) {
+    const value = event.target.value
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
 
-    let value;
+    this._valueChanged("group_order", value);
+  }
 
-    if (target.type === "checkbox") {
-      value = target.checked;
-    } else if (target.type === "number") {
-      value = Number(target.value);
-    } else if (key === "group_order") {
-      value = target.value
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean);
-    } else {
-      value = target.value;
-    }
-
+  _valueChanged(key, value) {
     const config = {
       ...this.config,
       [key]: value,
     };
+
+    if (key === "bar_direction") {
+      if (value === "vertical") {
+        if (!["top", "bottom"].includes(config.name_position)) {
+          config.name_position = "bottom";
+        }
+        if (!["top", "center", "bottom"].includes(config.value_position)) {
+          config.value_position = "center";
+        }
+      }
+
+      if (value === "horizontal") {
+        if (!["top", "bottom", "left", "right"].includes(config.name_position)) {
+          config.name_position = "bottom";
+        }
+        if (!["left", "center", "right"].includes(config.value_position)) {
+          config.value_position = "center";
+        }
+      }
+    }
 
     this.config = config;
 
@@ -278,13 +261,7 @@ class SpoolmanFilamentCardEditor extends HTMLElement {
       bubbles: true,
       composed: true,
     }));
-
-    if (["group_by", "bar_direction"].includes(key)) {
-      this._rendered = false;
-      this.render();
-      this._rendered = true;
-    }
   }
 }
 
-customElements.define("spoolman-filament-card-editor", SpoolmanFilamentCardEditor);
+customElements.define(EDITOR_TYPE, SpoolmanFilamentCardEditor);
