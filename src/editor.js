@@ -11,26 +11,55 @@ class SpoolmanFilamentCardEditor extends LitElement {
     .editor {
       padding: 16px;
     }
-
+  
     .section-title {
-      margin: 24px 0 12px;
+      margin-top: 24px;
+      margin-bottom: 12px;
       font-size: 16px;
       font-weight: 500;
     }
-
+  
     .section-title:first-child {
       margin-top: 0;
     }
-
+  
+    .field {
+      margin-bottom: 16px;
+    }
+  
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+  
+    .label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+  
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  
+    .switch-label,
+    .sub-label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
+  
     ha-form {
       display: block;
       width: 100%;
-      margin-bottom: 12px;
     }
-
+  
     textarea {
       width: 100%;
-      min-height: 90px;
+      min-height: 76px;
       box-sizing: border-box;
       padding: 8px;
       border: 1px solid var(--divider-color);
@@ -39,12 +68,6 @@ class SpoolmanFilamentCardEditor extends LitElement {
       color: var(--primary-text-color);
       font: inherit;
       resize: vertical;
-    }
-
-    .hint {
-      color: var(--secondary-text-color);
-      font-size: 12px;
-      margin-bottom: 6px;
     }
   `;
 
@@ -129,24 +152,31 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  renderTextForm(key, label) {
+  renderTextForm(value, label, onChange) {
     const schema = [
       {
         name: "value",
-        selector: { text: {} },
+        selector: {
+          text: {},
+        },
       },
     ];
   
     return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${{ value: this._config[key] ?? DEFAULT_CONFIG[key] ?? "" }}
-        .schema=${schema}
-        .computeLabel=${() => label}
-        @value-changed=${event => {
-          this.updateConfigValue(key, event.detail.value?.value ?? "");
-        }}
-      ></ha-form>
+      <div class="field">
+        <div class="field-header">
+          <div class="label">${label}</div>
+        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${{ value }}
+          .schema=${schema}
+          .computeLabel=${() => ""}
+          @value-changed=${event => {
+            onChange(event.detail.value?.value ?? "");
+          }}
+        ></ha-form>
+      </div>
     `;
   }
 
@@ -198,15 +228,15 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  renderSelectForm(key, label, options) {
+  renderSelect(value, label, options, onChange) {
     const schema = [
       {
         name: "value",
         selector: {
           select: {
             mode: "dropdown",
-            options: options.map(([value, optionLabel]) => ({
-              value,
+            options: options.map(([optionValue, optionLabel]) => ({
+              value: optionValue,
               label: optionLabel,
             })),
           },
@@ -215,18 +245,23 @@ class SpoolmanFilamentCardEditor extends LitElement {
     ];
   
     return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${{ value: this._config[key] ?? DEFAULT_CONFIG[key] }}
-        .schema=${schema}
-        .computeLabel=${() => label}
-        @value-changed=${event => {
-          const value = event.detail.value?.value;
-          if (value !== undefined) {
-            this.updateConfigValue(key, value);
-          }
-        }}
-      ></ha-form>
+      <div class="field">
+        <div class="field-header">
+          <div class="label">${label}</div>
+        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${{ value }}
+          .schema=${schema}
+          .computeLabel=${() => ""}
+          @value-changed=${event => {
+            const selectedValue = event.detail.value?.value;
+            if (selectedValue !== undefined) {
+              onChange(selectedValue);
+            }
+          }}
+        ></ha-form>
+      </div>
     `;
   }
 
