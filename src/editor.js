@@ -58,6 +58,42 @@ class SpoolmanFilamentCardEditor extends LitElement {
       border: 1px solid var(--divider-color);
       border-radius: 8px;
     }
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .editor-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      background: var(--primary-color);
+      color: var(--text-primary-color);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .editor-button:hover {
+      filter: brightness(1.08);
+    }
+    
+    .editor-button.secondary {
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--divider-color);
+    }
+    
+    .editor-button.danger {
+      background: var(--error-color);
+      color: var(--text-primary-color);
+    }
   `;
 
   setConfig(config) {
@@ -643,9 +679,14 @@ class SpoolmanFilamentCardEditor extends LitElement {
   
       ${items.map((item, index) => this.renderCustomItem(item, index))}
   
-      <mwc-button @click=${this.addCustomItem}>
+      <button
+        class="editor-button"
+        type="button"
+        @click=${() => this.addCustomItem()}
+      >
+        <ha-icon icon="mdi:plus"></ha-icon>
         Add spool
-      </mwc-button>
+      </button>
   
       ${this.renderCustomSharedOptions()}
     `;
@@ -698,9 +739,14 @@ class SpoolmanFilamentCardEditor extends LitElement {
           value => this.updateCustomItem(index, "unit", value)
         )}
   
-        <mwc-button @click=${() => this.removeCustomItem(index)}>
+        <button
+          class="editor-button danger"
+          type="button"
+          @click=${() => this.removeCustomItem(index)}
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
           Remove spool
-        </mwc-button>
+        </button>
       </div>
     `;
   }
