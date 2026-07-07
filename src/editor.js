@@ -55,7 +55,9 @@ class SpoolmanFilamentCardEditor extends LitElement {
     .hint {
       color: var(--secondary-text-color);
       font-size: 12px;
-      margin-bottom: -8px;
+      line-height: 1.4;
+      margin-top: -8px;
+      margin-bottom: -4px;
     }
   `;
 
@@ -75,8 +77,11 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
         ${this.renderTextField("title", "Title")}
         ${this.renderSwitch("hide_archived", "Hide archived spools")}
+        
 
         <div class="section-title">Grouping</div>
+
+        ${this.renderHint("Choose how filament spools should be grouped.")}
 
         ${this.renderSelect(
           this._config.group_by || "material",
@@ -91,7 +96,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
         ${this._config.group_by !== "none"
           ? html`
-              <div class="hint">Group order, one entry per line. Empty = automatic sorting.</div>
+              ${this.renderHint(this.groupOrderHint())}
               <textarea
                 .value=${this.groupOrderValue()}
                 @input=${this.handleGroupOrderChanged}
@@ -117,14 +122,14 @@ class SpoolmanFilamentCardEditor extends LitElement {
                 ],
                 value => this.updateConfigValue("group_sort_direction", value)
               )}
-
+              ${this.renderHint("Any Home Assistant icon. Use 'none' to hide the icon.")}
               ${this.renderTextField("group_icon", "Group icon")}
               ${this.renderSwitch("show_group_title", "Show group title")}
             `
           : html``}
 
         <div class="section-title">Sorting</div>
-
+        ${this.renderHint("Attribute used to sort spools inside each group.")}
         ${this.renderSelect(
           this._config.sort_by || "remaining_weight",
           [
@@ -147,7 +152,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
         )}
 
         <div class="section-title">Appearance</div>
-
+        ${this.renderHint("Choose whether filament levels are shown vertically or horizontally.")}
         ${this.renderSelect(
           this._config.bar_direction || "vertical",
           [
@@ -164,25 +169,43 @@ class SpoolmanFilamentCardEditor extends LitElement {
             this.setAndDispatchConfig(config);
           }
         )}
-
+        ${this.renderHint("Position of the filament name relative to the bar.")}
         ${this.renderSelect(
           this._config.name_position || "bottom",
           this.namePositionOptions(),
           value => this.updateConfigValue("name_position", value)
         )}
+        ${this.renderHint("Position of the remaining weight value inside the bar.")}
         ${this.renderSelect(
           this._config.value_position || "center",
           this.valuePositionOptions(),
           value => this.updateConfigValue("value_position", value)
         )}
-
+        ${this.renderHint("Used only if the spool does not provide its own filament weight.")}
         ${this.renderNumberField("max_weight", "Max weight fallback")}
         ${this.renderSwitch("show_name", "Show name")}
+        ${this.renderHint("Use the configured filament color instead of the Home Assistant theme color.")}
         ${this.renderSwitch("use_filament_color", "Use filament color")}
       </div>
     `;
   }
 
+  renderHint(text) {
+    return html`
+      <div class="hint">${text}</div>
+    `;
+  }
+  groupOrderHint() {
+    if (this._config.group_by === "color") {
+      return "One color per line. Unknown colors are appended automatically.";
+    }
+  
+    if (this._config.group_by === "vendor") {
+      return "One vendor per line. Unknown vendors are appended automatically.";
+    }
+  
+    return "One material per line. Unknown materials are appended automatically.";
+  }
   renderTextField(key, label) {
     return html`
       <ha-textfield
