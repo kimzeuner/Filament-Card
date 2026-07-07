@@ -1,290 +1,310 @@
-import { DEFAULT_CONFIG } from "./const.js";
+import { LitElement, html, css } from "lit";
+import { DEFAULT_CONFIG, EDITOR_TYPE } from "./const.js";
 
-class SpoolmanFilamentCardEditor extends HTMLElement {
+class SpoolmanFilamentCardEditor extends LitElement {
+  static properties = {
+    hass: { attribute: false },
+    _config: { state: true },
+  };
+
+  static styles = css`
+    .editor {
+      display: grid;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .section-title {
+      margin-top: 12px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .section-title:first-child {
+      margin-top: 0;
+    }
+
+    ha-textfield,
+    ha-select {
+      width: 100%;
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .switch-label {
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      box-sizing: border-box;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color);
+      color: var(--primary-text-color);
+      font: inherit;
+      resize: vertical;
+    }
+
+    .hint {
+      color: var(--secondary-text-color);
+      font-size: 12px;
+      margin-bottom: -8px;
+    }
+  `;
+
   setConfig(config) {
-    this.config = {
+    this._config = {
       ...DEFAULT_CONFIG,
       ...config,
     };
-
-    if (!this._rendered) {
-      this.render();
-      this._rendered = true;
-    }
-  }
-
-  set hass(hass) {
-    this._hass = hass;
   }
 
   render() {
-    if (!this.config) return;
+    if (!this._config) return html``;
 
-    this.innerHTML = `
-      <style>
-        .form {
-          display: grid;
-          gap: 12px;
-        }
+    return html`
+      <div class="editor">
+        <div class="section-title">General</div>
 
-        label {
-          display: grid;
-          gap: 4px;
-          font-size: 14px;
-        }
+        ${this.renderTextField("title", "Title")}
+        ${this.renderSwitch("hide_archived", "Hide archived spools")}
 
-        input,
-        select,
-        textarea {
-          width: 100%;
-          box-sizing: border-box;
-          padding: 8px;
-          border-radius: 6px;
-          border: 1px solid var(--divider-color);
-          background: var(--card-background-color);
-          color: var(--primary-text-color);
-        }
+        <div class="section-title">Grouping</div>
 
-        textarea {
-          min-height: 90px;
-          resize: vertical;
-          font-family: inherit;
-        }
+        ${this.renderSelect("group_by", "Group by", [
+          ["material", "Material"],
+          ["color", "Color"],
+          ["vendor", "Vendor"],
+          ["none", "Don't group"],
+        ])}
 
-        .checkbox {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
+        ${this._config.group_by !== "none"
+          ? html`
+              <div class="hint">Group order, one entry per line. Empty = automatic sorting.</div>
+              <textarea
+                .value=${this.groupOrderValue()}
+                @change=${this.handleGroupOrderChanged}
+              ></textarea>
 
-        .checkbox input {
-          width: auto;
-        }
+              ${this.renderSelect("group_sort_by", "Group sort by", [
+                ["name", "Name"],
+                ["total_remaining_weight", "Total remaining weight"],
+                ["max_remaining_weight", "Max remaining weight"],
+                ["spool_count", "Spool count"],
+              ])}
 
-        .section {
-          font-weight: 600;
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px solid var(--divider-color);
-        }
+              ${this.renderSelect("group_sort_direction", "Group sort direction", [
+                ["asc", "Ascending"],
+                ["desc", "Descending"],
+              ])}
 
-        .section:first-child {
-          margin-top: 0;
-          padding-top: 0;
-          border-top: none;
-        }
-      </style>
+              ${this.renderTextField("group_icon", "Group icon")}
+              ${this.renderSwitch("show_group_title", "Show group title")}
+            `
+          : html``}
 
-      <div class="form">
-        <div class="section">General</div>
+        <div class="section-title">Sorting</div>
 
-        <label>
-          Title
-          <input name="title" value="${this.config.title ?? ""}">
-        </label>
+        ${this.renderSelect("sort_by", "Sort by", [
+          ["remaining_weight", "Remaining weight"],
+          ["filament_name", "Filament name"],
+          ["filament_material", "Material"],
+          ["filament_vendor_name", "Vendor"],
+          ["filament_color_hex", "Color"],
+        ])}
 
-        <label class="checkbox">
-          <input name="hide_archived" type="checkbox" ${this.config.hide_archived !== false ? "checked" : ""}>
-          Hide archived spools
-        </label>
+        ${this.renderSelect("sort_direction", "Sort direction", [
+          ["asc", "Ascending"],
+          ["desc", "Descending"],
+        ])}
 
-        <div class="section">Grouping</div>
+        <div class="section-title">Appearance</div>
 
-        <label>
-          Group by
-          <select name="group_by">
-            <option value="material" ${this.selected("group_by", "material")}>Material</option>
-            <option value="color" ${this.selected("group_by", "color")}>Color</option>
-            <option value="vendor" ${this.selected("group_by", "vendor")}>Vendor</option>
-            <option value="none" ${this.selected("group_by", "none")}>Don't group</option>
-          </select>
-        </label>
+        ${this.renderSelect("bar_direction", "Bar direction", [
+          ["vertical", "Vertical"],
+          ["horizontal", "Horizontal"],
+        ])}
 
-        ${this.config.group_by !== "none" ? `
-          <label>
-            Group order
-            <textarea name="group_order">${this.groupOrderValue()}</textarea>
-          </label>
+        ${this.renderSelect("name_position", "Name position", this.namePositionOptions())}
+        ${this.renderSelect("value_position", "Value position", this.valuePositionOptions())}
 
-          <label>
-            Group sort by
-            <select name="group_sort_by">
-              <option value="name" ${this.selected("group_sort_by", "name")}>Name</option>
-              <option value="total_remaining_weight" ${this.selected("group_sort_by", "total_remaining_weight")}>Total remaining weight</option>
-              <option value="max_remaining_weight" ${this.selected("group_sort_by", "max_remaining_weight")}>Max remaining weight</option>
-              <option value="spool_count" ${this.selected("group_sort_by", "spool_count")}>Spool count</option>
-            </select>
-          </label>
-
-          <label>
-            Group sort direction
-            <select name="group_sort_direction">
-              <option value="asc" ${this.selected("group_sort_direction", "asc")}>Ascending</option>
-              <option value="desc" ${this.selected("group_sort_direction", "desc")}>Descending</option>
-            </select>
-          </label>
-
-          <label>
-            Group icon
-            <input name="group_icon" value="${this.config.group_icon ?? "mdi:printer-3d-nozzle"}">
-          </label>
-
-          <label class="checkbox">
-            <input name="show_group_title" type="checkbox" ${this.config.show_group_title !== false ? "checked" : ""}>
-            Show group title
-          </label>
-        ` : ""}
-
-        <div class="section">Sorting</div>
-
-        <label>
-          Sort by
-          <select name="sort_by">
-            <option value="remaining_weight" ${this.selected("sort_by", "remaining_weight")}>Remaining weight</option>
-            <option value="filament_name" ${this.selected("sort_by", "filament_name")}>Filament name</option>
-            <option value="filament_material" ${this.selected("sort_by", "filament_material")}>Material</option>
-            <option value="filament_vendor_name" ${this.selected("sort_by", "filament_vendor_name")}>Vendor</option>
-            <option value="filament_color_hex" ${this.selected("sort_by", "filament_color_hex")}>Color</option>
-          </select>
-        </label>
-
-        <label>
-          Sort direction
-          <select name="sort_direction">
-            <option value="asc" ${this.selected("sort_direction", "asc")}>Ascending</option>
-            <option value="desc" ${this.selected("sort_direction", "desc")}>Descending</option>
-          </select>
-        </label>
-
-        <div class="section">Appearance</div>
-
-        <label>
-          Bar direction
-          <select name="bar_direction">
-            <option value="vertical" ${this.selected("bar_direction", "vertical")}>Vertical</option>
-            <option value="horizontal" ${this.selected("bar_direction", "horizontal")}>Horizontal</option>
-          </select>
-        </label>
-
-        <label>
-          Name position
-          <select name="name_position">
-            ${this.namePositionOptions()}
-          </select>
-        </label>
-
-        <label>
-          Value position
-          <select name="value_position">
-            ${this.valuePositionOptions()}
-          </select>
-        </label>
-
-        <label>
-          Max weight fallback
-          <input name="max_weight" type="number" value="${this.config.max_weight ?? 1000}">
-        </label>
-
-        <label class="checkbox">
-          <input name="show_name" type="checkbox" ${this.config.show_name !== false ? "checked" : ""}>
-          Show name
-        </label>
-
-        <label class="checkbox">
-          <input name="use_filament_color" type="checkbox" ${this.config.use_filament_color !== false ? "checked" : ""}>
-          Use filament color
-        </label>
+        ${this.renderNumberField("max_weight", "Max weight fallback")}
+        ${this.renderSwitch("show_name", "Show name")}
+        ${this.renderSwitch("use_filament_color", "Use filament color")}
       </div>
     `;
-
-    this.querySelectorAll("input, select, textarea").forEach(element => {
-      element.addEventListener("change", event => this.valueChanged(event));
-    });
   }
 
-  selected(key, value) {
-    return (this.config[key] ?? DEFAULT_CONFIG[key]) === value ? "selected" : "";
+  renderTextField(key, label) {
+    return html`
+      <ha-textfield
+        label=${label}
+        .value=${this._config[key] ?? DEFAULT_CONFIG[key] ?? ""}
+        @input=${event => this.updateConfigValue(key, event.target.value)}
+      ></ha-textfield>
+    `;
   }
 
-  namePositionOptions() {
-    const options = this.config.bar_direction === "horizontal"
-      ? [
-          ["top", "Top"],
-          ["bottom", "Bottom"],
-          ["left", "Left"],
-          ["right", "Right"],
-        ]
-      : [
-          ["top", "Top"],
-          ["bottom", "Bottom"],
-        ];
-
-    return options.map(([value, label]) =>
-      `<option value="${value}" ${this.selected("name_position", value)}>${label}</option>`
-    ).join("");
+  renderNumberField(key, label) {
+    return html`
+      <ha-textfield
+        label=${label}
+        type="number"
+        .value=${String(this._config[key] ?? DEFAULT_CONFIG[key] ?? 0)}
+        @input=${event => this.updateConfigValue(key, Number(event.target.value))}
+      ></ha-textfield>
+    `;
   }
 
-  valuePositionOptions() {
-    const options = this.config.bar_direction === "horizontal"
-      ? [
-          ["left", "Left"],
-          ["center", "Center"],
-          ["right", "Right"],
-        ]
-      : [
-          ["top", "Top"],
-          ["center", "Center"],
-          ["bottom", "Bottom"],
-        ];
+  renderSelect(key, label, options) {
+    const value = this._config[key] ?? DEFAULT_CONFIG[key];
 
-    return options.map(([value, label]) =>
-      `<option value="${value}" ${this.selected("value_position", value)}>${label}</option>`
-    ).join("");
+    return html`
+      <ha-select
+        label=${label}
+        .value=${value}
+        @selected=${event => this.handleSelectChanged(key, event)}
+        @closed=${event => event.stopPropagation()}
+      >
+        ${options.map(
+          ([optionValue, optionLabel]) => html`
+            <mwc-list-item
+              .value=${optionValue}
+              ?selected=${value === optionValue}
+            >
+              ${optionLabel}
+            </mwc-list-item>
+          `
+        )}
+      </ha-select>
+    `;
   }
 
-  groupOrderValue() {
-    if (!Array.isArray(this.config.group_order)) return "";
-    return this.config.group_order.join("\n");
+  renderSwitch(key, label) {
+    return html`
+      <div class="switch-row">
+        <ha-switch
+          .checked=${this._config[key] !== false}
+          @change=${event => this.updateConfigValue(key, event.target.checked)}
+        ></ha-switch>
+        <span class="switch-label">${label}</span>
+      </div>
+    `;
   }
 
-  valueChanged(event) {
-    const target = event.target;
-    const key = target.name;
-
-    let value;
-
-    if (target.type === "checkbox") {
-      value = target.checked;
-    } else if (target.type === "number") {
-      value = Number(target.value);
-    } else if (key === "group_order") {
-      value = target.value
-        .split("\n")
-        .map(line => line.trim())
-        .filter(Boolean);
-    } else {
-      value = target.value;
-    }
+  handleSelectChanged(key, event) {
+    const value = event.target.value;
+    if (value === undefined || value === this._config[key]) return;
 
     const config = {
-      ...this.config,
+      ...this._config,
       [key]: value,
     };
 
-    this.config = config;
-
-    this.dispatchEvent(new CustomEvent("config-changed", {
-      detail: { config },
-      bubbles: true,
-      composed: true,
-    }));
-
-    if (["group_by", "bar_direction"].includes(key)) {
-      this._rendered = false;
-      this.render();
-      this._rendered = true;
+    if (key === "bar_direction") {
+      this.normalizePositions(config);
     }
+
+    this.setAndDispatchConfig(config);
+  }
+
+  updateConfigValue(key, value) {
+    const config = {
+      ...this._config,
+      [key]: value,
+    };
+
+    this.setAndDispatchConfig(config);
+  }
+
+  handleGroupOrderChanged(event) {
+    const group_order = event.target.value
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    this.setAndDispatchConfig({
+      ...this._config,
+      group_order,
+    });
+  }
+
+  groupOrderValue() {
+    return Array.isArray(this._config.group_order)
+      ? this._config.group_order.join("\n")
+      : "";
+  }
+
+  namePositionOptions() {
+    return this._config.bar_direction === "horizontal"
+      ? [
+          ["top", "Top"],
+          ["bottom", "Bottom"],
+          ["left", "Left"],
+          ["right", "Right"],
+        ]
+      : [
+          ["top", "Top"],
+          ["bottom", "Bottom"],
+        ];
+  }
+
+  valuePositionOptions() {
+    return this._config.bar_direction === "horizontal"
+      ? [
+          ["left", "Left"],
+          ["center", "Center"],
+          ["right", "Right"],
+        ]
+      : [
+          ["top", "Top"],
+          ["center", "Center"],
+          ["bottom", "Bottom"],
+        ];
+  }
+
+  normalizePositions(config) {
+    if (config.bar_direction === "vertical") {
+      if (!["top", "bottom"].includes(config.name_position)) {
+        config.name_position = "bottom";
+      }
+
+      if (!["top", "center", "bottom"].includes(config.value_position)) {
+        config.value_position = "center";
+      }
+    }
+
+    if (config.bar_direction === "horizontal") {
+      if (!["top", "bottom", "left", "right"].includes(config.name_position)) {
+        config.name_position = "bottom";
+      }
+
+      if (!["left", "center", "right"].includes(config.value_position)) {
+        config.value_position = "center";
+      }
+    }
+  }
+
+  setAndDispatchConfig(config) {
+    this._config = config;
+
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 
-customElements.define("spoolman-filament-card-editor", SpoolmanFilamentCardEditor);
+if (!customElements.get(EDITOR_TYPE)) {
+  customElements.define(EDITOR_TYPE, SpoolmanFilamentCardEditor);
+}
