@@ -165,24 +165,21 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
   renderSelect(key, label, options) {
     const value = this._config[key] ?? DEFAULT_CONFIG[key];
-    const selectedIndex = options.findIndex(([optionValue]) => optionValue === value);
   
     return html`
       <ha-select
         label=${label}
         .value=${value}
-        .selected=${selectedIndex >= 0 ? selectedIndex : 0}
-        @selected=${event => {
-          const item = event.detail?.item;
-          const selectedValue = item?.value ?? item?.getAttribute?.("value");
-          if (selectedValue !== undefined && selectedValue !== null) {
-            this.handleSelectChanged(key, selectedValue);
-          }
-        }}
+        @change=${event => this.handleSelectChanged(key, event.target.value)}
+        @selected=${event => this.handleSelectChanged(key, event.target.value)}
         @closed=${event => event.stopPropagation()}
       >
         ${options.map(
           ([optionValue, optionLabel]) => html`
+            <mwc-list-item
+              .value=${optionValue}
+              value=${optionValue}
+            >
               ${optionLabel}
             </mwc-list-item>
           `
