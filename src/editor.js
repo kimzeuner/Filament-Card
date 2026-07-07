@@ -51,7 +51,13 @@ class SpoolmanFilamentCardEditor extends LitElement {
       font: inherit;
       resize: vertical;
     }
-
+    .custom-item {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+    }
   `;
 
   setConfig(config) {
@@ -264,9 +270,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
       {
         name: "value",
         selector: {
-          entity: {
-            multiple: true,
-          },
+          entity: {},
         },
       },
     ];
@@ -278,7 +282,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
         .schema=${schema}
         .computeLabel=${() => label}
         @value-changed=${event => {
-          onChange(event.detail.value?.value || []);
+          onChange(event.detail.value?.value || "");
         }}
       ></ha-form>
     `;
@@ -626,6 +630,111 @@ class SpoolmanFilamentCardEditor extends LitElement {
         config.value_position = "center";
       }
     }
+  }
+
+  updateCustomItem(index, key, value) {
+    const custom_items = [...(this._config.custom_items || [])];
+  
+    custom_items[index] = {
+      ...custom_items[index],
+      [key]: value,
+    };
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+  
+  addCustomItem() {
+    const custom_items = [
+      ...(this._config.custom_items || []),
+      {
+        name: "",
+        value_entity: "",
+        max_entity: "",
+        color_entity: "",
+        group_entity: "",
+        vendor_entity: "",
+        unit: this._config.custom_unit || "g",
+      },
+    ];
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+  
+  removeCustomItem(index) {
+    const custom_items = [...(this._config.custom_items || [])];
+    custom_items.splice(index, 1);
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+
+  renderCustomEntityOptions() {
+    const items = this._config.custom_items || [];
+  
+    return html`
+      <div class="section-title">Custom Multiple Entities</div>
+  
+      ${items.map((item, index) => this.renderCustomItem(item, index))}
+  
+      <mwc-button @click=${this.addCustomItem}>
+        Add spool
+      </mwc-button>
+  
+      ${this.renderCustomSharedOptions()}
+    `;
+  }
+
+  renderCustomItem(item, index) {
+    return html`
+      <div class="custom-item">
+        <div class="section-title">Spool ${index + 1}</div>
+  
+        ${this.renderTextForm(
+          item.name || "",
+          "Name",
+          value => this.updateCustomItem(index, "name", value)
+        )}
+  
+        ${this.renderEntityPicker(
+          item.value_entity || "",
+          "Value entity",
+          value => this.updateCustomItem(index, "value_entity", value)
+        )}
+  
+        ${this.renderEntityPicker(
+          item.max_entity || "",
+          "Max entity",
+          value => this.updateCustomItem(index, "max_entity", value)
+        )}
+  
+        ${this.renderEntityPicker(
+          item.color_entity || "",
+          "Color entity",
+          value => this.updateCustomItem(index, "color_entity", value)
+        )}
+  
+        ${this.renderEntityPicker(
+          item.group_entity || "",
+          "Group entity",
+          value => this.updateCustomItem(index, "group_entity", value)
+        )}
+  
+        ${this.renderEntityPicker(
+          item.vendor_entity || "",
+          "Vendor entity",
+          value => this.updateCustomItem(index, "vendor_entity", value)
+        )}
+  
+        ${this.renderTextForm(
+          item.unit || this._config.custom_unit || "g",
+          "Unit",
+          value => this.updateCustomItem(index, "unit", value)
+        )}
+  
+        <mwc-button @click=${() => this.removeCustomItem(index)}>
+          Remove spool
+        </mwc-button>
+      </div>
+    `;
   }
 
   setAndDispatchConfig(config) {
