@@ -23,7 +23,8 @@ export const DEFAULT_CONFIG = {
   use_filament_color: true,
 
   // Custom mode
-  custom_entities: [],
+  custom_attribute_entities: [],
+  custom_items: [],
   custom_max_value: 1000,
   custom_unit: "g",
 };
