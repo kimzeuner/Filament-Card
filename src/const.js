@@ -27,4 +27,6 @@ export const DEFAULT_CONFIG = {
   custom_items: [],
   custom_max_value: 1000,
   custom_unit: "g",
+
+  custom_label_id: "",
 };
