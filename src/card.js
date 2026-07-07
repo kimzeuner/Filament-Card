@@ -32,16 +32,36 @@ class SpoolmanFilamentCard extends HTMLElement {
   }
 
   set hass(hass) {
+    const oldSignature = this._spoolSignature;
+  
     this._hass = hass;
+    this._spoolSignature = this.createSpoolSignature(hass);
   
-    if (this._renderScheduled) return;
-  
-    this._renderScheduled = true;
-  
-    requestAnimationFrame(() => {
-      this._renderScheduled = false;
+    if (!oldSignature || oldSignature !== this._spoolSignature) {
       this.render();
-    });
+    }
+  }
+
+  createSpoolSignature(hass) {
+    return Object.entries(hass.states)
+      .filter(([, state]) => state.attributes?.filament_material)
+      .map(([entity_id, state]) => {
+        const attr = state.attributes;
+  
+        return [
+          entity_id,
+          state.state,
+          attr.remaining_weight,
+          attr.filament_weight,
+          attr.archived,
+          attr.filament_material,
+          attr.filament_name,
+          attr.filament_color_hex,
+          attr.filament_vendor_name,
+        ].join("|");
+      })
+      .sort()
+      .join(";");
   }
 
   render() {
