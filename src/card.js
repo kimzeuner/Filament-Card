@@ -165,6 +165,10 @@ class SpoolmanFilamentCard extends HTMLElement {
       return this.getCustomEntityItems();
     }
 
+    if (preset === "custom_label") {
+      return this.getCustomLabelItems();
+    }
+
     return this.getSpoolmanItems();
   }
 
@@ -251,6 +255,19 @@ class SpoolmanFilamentCard extends HTMLElement {
       })
       .filter(Boolean)
       .sort((a, b) => compareItems(this.config, a, b));
+  }
+
+  getCustomLabelItems() {
+    const labelId = this.config.custom_label_id;
+    if (!labelId || !this._hass?.entities) return [];
+  
+    const entityIds = Object.entries(this._hass.entities)
+      .filter(([, entity]) => entity.labels?.includes(labelId))
+      .map(([entityId]) => entityId);
+  
+    this.config.custom_attribute_entities = entityIds;
+  
+    return this.getCustomAttributeItems();
   }
 
   createVirtualItem({ entity_id, value, max, name, group, vendor, color, unit }) {
