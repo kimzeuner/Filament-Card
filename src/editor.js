@@ -90,7 +90,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
               <div class="hint">Group order, one entry per line. Empty = automatic sorting.</div>
               <textarea
                 .value=${this.groupOrderValue()}
-                @change=${this.handleGroupOrderChanged}
+                @input=${this.handleGroupOrderChanged}
               ></textarea>
 
               ${this.renderSelect("group_sort_by", "Group sort by", [
@@ -165,14 +165,20 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
   renderSelect(key, label, options) {
     const value = this._config[key] ?? DEFAULT_CONFIG[key];
-
+    const selectedLabel = options.find(([optionValue]) => optionValue === value)?.[1] ?? value;
+  
     return html`
       <ha-select
         label=${label}
         .value=${value}
+        .label=${label}
+        .fixedMenuPosition=${true}
+        @change=${event => this.handleSelectChanged(key, event)}
         @selected=${event => this.handleSelectChanged(key, event)}
         @closed=${event => event.stopPropagation()}
       >
+        <mwc-list-item .value=${value} selected>${selectedLabel}</mwc-list-item>
+  
         ${options.map(
           ([optionValue, optionLabel]) => html`
             <mwc-list-item
@@ -201,17 +207,18 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
   handleSelectChanged(key, event) {
     const value = event.target.value;
-    if (value === undefined || value === this._config[key]) return;
-
+  
+    if (value === undefined || value === null) return;
+  
     const config = {
       ...this._config,
       [key]: value,
     };
-
+  
     if (key === "bar_direction") {
       this.normalizePositions(config);
     }
-
+  
     this.setAndDispatchConfig(config);
   }
 
