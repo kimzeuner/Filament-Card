@@ -64,83 +64,31 @@ class SpoolmanFilamentCardEditor extends LitElement {
   render() {
     if (!this._config) return html``;
 
+    const preset = this._config.preset || "spoolman";
+    
     return html`
       <div class="editor">
         <div class="section-title">General</div>
 
+        ${this.renderSelect(
+          this._config.preset || "spoolman",
+          "Choose Preset",
+          [
+            ["spoolman", "Spoolman"],
+            ["custom", "Custom"],
+          ],
+          value => this.updateConfigValue("preset", value)
+        )}
         ${this.renderTextField("title", "Title")}
-        ${this.renderSwitch("hide_archived", "Hide archived spools")}
         
 
         <div class="section-title">Grouping</div>
 
-        ${this.renderSelect(
-          this._config.group_by || "material", "Group by",
-          [
-            ["material", "Material"],
-            ["color", "Color"],
-            ["vendor", "Vendor"],
-            ["none", "Don't group"],
-          ],
-          value => this.updateConfigValue("group_by", value)
-        )}
-
-        ${this._config.group_by !== "none"
-          ? html`
-              ${this.renderHint(this.groupOrderHint())}
-              <textarea
-                .value=${this.groupOrderValue()}
-                @input=${this.handleGroupOrderChanged}
-              ></textarea>
-
-              ${this.renderSelect(
-                this._config.group_sort_by || "name", "Name",
-                [
-                  ["name", "Name"],
-                  ["total_remaining_weight", "Total remaining weight"],
-                  ["max_remaining_weight", "Max remaining weight"],
-                  ["spool_count", "Spool count"],
-                ],
-                value => this.updateConfigValue("group_sort_by", value)
-              )}
-          
-
-              ${this.renderSelect(
-                this._config.group_sort_direction || "asc", "Sort direction",
-                [
-                  ["asc", "Ascending"],
-                  ["desc", "Descending"],
-                ],
-                value => this.updateConfigValue("group_sort_direction", value)
-              )}
-              ${this.renderTextField("group_icon", "Group icon")}
-              ${this.renderSwitch("show_group_title", "Show group title")}
-            `
-          : html``}
-
-        <div class="section-title">Sorting</div>
-        ${this.renderSelect(
-          this._config.sort_by || "remaining_weight", "Sort by",
-          [
-            ["remaining_weight", "Remaining weight"],
-            ["filament_name", "Filament name"],
-            ["filament_material", "Material"],
-            ["filament_vendor_name", "Vendor"],
-            ["filament_color_hex", "Color"],
-          ],
-          value => this.updateConfigValue("sort_by", value)
-        )}
-
-        ${this.renderSelect(
-          this._config.sort_direction || "asc", "Sort direction",
-          [
-            ["asc", "Ascending"],
-            ["desc", "Descending"],
-          ],
-          value => this.updateConfigValue("sort_direction", value)
-        )}
-
+        ${preset === "spoolman" ? this.renderSpoolmanOptions() : ""}
+        ${preset === "custom" ? this.renderCustomOptions() : ""}
+        
         <div class="section-title">Appearance</div>
+        
         ${this.renderSelect(
           this._config.bar_direction || "vertical", "Bar direction",
           [
@@ -157,24 +105,133 @@ class SpoolmanFilamentCardEditor extends LitElement {
             this.setAndDispatchConfig(config);
           }
         )}
-
+        
         ${this.renderSelect(
           this._config.name_position || "bottom", "Name position",
           this.namePositionOptions(),
           value => this.updateConfigValue("name_position", value)
         )}
-
+        
         ${this.renderSelect(
           this._config.value_position || "center", "Value position",
           this.valuePositionOptions(),
           value => this.updateConfigValue("value_position", value)
         )}
-
-        ${this.renderNumberField("max_weight", "Max weight fallback")}
+        
         ${this.renderSwitch("show_name", "Show name")}
-
-        ${this.renderSwitch("use_filament_color", "Use filament color")}
       </div>
+    `;
+  }
+
+  renderSpoolmanOptions() {
+    return html`
+      <div class="section-title">Grouping</div>
+
+      ${this.renderSelect(
+        this._config.group_by || "material",
+        "Group by",
+        [
+          ["material", "Material"],
+          ["color", "Color"],
+          ["vendor", "Vendor"],
+          ["none", "Don't group"],
+        ],
+        value => this.updateConfigValue("group_by", value)
+      )}
+
+      ${this._config.group_by !== "none"
+        ? html`
+            ${this.renderHint(this.groupOrderHint())}
+            <textarea
+              .value=${this.groupOrderValue()}
+              @input=${this.handleGroupOrderChanged}
+            ></textarea>
+
+            ${this.renderSelect(
+              this._config.group_sort_by || "name",
+              "Group sort by",
+              [
+                ["name", "Name"],
+                ["total_remaining_weight", "Total remaining weight"],
+                ["max_remaining_weight", "Max remaining weight"],
+                ["spool_count", "Spool count"],
+              ],
+              value => this.updateConfigValue("group_sort_by", value)
+            )}
+
+            ${this.renderSelect(
+              this._config.group_sort_direction || "asc",
+              "Group sort direction",
+              [
+                ["asc", "Ascending"],
+                ["desc", "Descending"],
+              ],
+              value => this.updateConfigValue("group_sort_direction", value)
+            )}
+
+            ${this.renderTextField("group_icon", "Group icon")}
+            ${this.renderSwitch("show_group_title", "Show group title")}
+          `
+        : html``}
+
+      <div class="section-title">Sorting</div>
+
+      ${this.renderSelect(
+        this._config.sort_by || "remaining_weight",
+        "Sort by",
+        [
+          ["remaining_weight", "Remaining weight"],
+          ["filament_name", "Filament name"],
+          ["filament_material", "Material"],
+          ["filament_vendor_name", "Vendor"],
+          ["filament_color_hex", "Color"],
+        ],
+        value => this.updateConfigValue("sort_by", value)
+      )}
+
+      ${this.renderSelect(
+        this._config.sort_direction || "asc",
+        "Sort direction",
+        [
+          ["asc", "Ascending"],
+          ["desc", "Descending"],
+        ],
+        value => this.updateConfigValue("sort_direction", value)
+      )}
+
+      ${this.renderNumberField("max_weight", "Max weight fallback")}
+      ${this.renderSwitch("hide_archived", "Hide archived spools")}
+      ${this.renderSwitch("show_group_title", "Show group title")}
+      ${this.renderSwitch("use_filament_color", "Use filament color")}
+    `;
+  }
+
+  renderCustomOptions() {
+    return html`
+      ${this.renderTextArea(
+        (this._config.custom_entities || []).join("\n"),
+        "Custom entities",
+        value =>
+          this.updateConfigValue(
+            "custom_entities",
+            value
+              .split("\n")
+              .map(v => v.trim())
+              .filter(Boolean)
+          )
+      )}
+  
+      ${this.renderTextForm(
+        this._config.custom_max_value ?? 1000,
+        "Max value",
+        value => this.updateConfigValue("custom_max_value", Number(value))
+      )}
+  
+      ${this.renderTextForm(
+        this._config.custom_unit || "g",
+        "Unit",
+        value => this.updateConfigValue("custom_unit", value)
+      )}
     `;
   }
 
@@ -238,6 +295,16 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
+  renderTextArea(value, label, onChange) {
+    return html`
+      ${this.renderHint(label)}
+      <textarea
+        .value=${value}
+        @input=${event => onChange(event.target.value)}
+      ></textarea>
+    `;
+  }
+  
   renderSelect(value, label, options, onChange) {
     const schema = [
       {
