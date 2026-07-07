@@ -314,38 +314,6 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  renderCustomEntityOptions() {
-    return html`
-      <div class="section-title">Custom Multiple Entities</div>
-
-      ${this.renderTextArea(
-        JSON.stringify(this._config.custom_items || [], null, 2),
-        "Custom items JSON",
-        value => {
-          try {
-            this.updateConfigValue("custom_items", JSON.parse(value || "[]"));
-          } catch (e) {
-            // Ignore invalid JSON while typing
-          }
-        }
-      )}
-
-      ${this.renderTextForm(
-        this._config.custom_max_value ?? 1000,
-        "Default max value",
-        value => this.updateConfigValue("custom_max_value", Number(value))
-      )}
-
-      ${this.renderTextForm(
-        this._config.custom_unit || "g",
-        "Default unit",
-        value => this.updateConfigValue("custom_unit", value)
-      )}
-
-      ${this.renderCustomSharedOptions()}
-    `;
-  }
-
   renderCustomSharedOptions() {
     return html`
       <div class="section-title">Grouping</div>
