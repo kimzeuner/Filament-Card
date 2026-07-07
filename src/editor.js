@@ -170,8 +170,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
       <ha-select
         label=${label}
         .value=${value}
-        @change=${event => this.handleSelectChanged(key, event.target.value)}
-        @selected=${event => this.handleSelectChanged(key, event.target.value)}
+        @value-changed=${event => this.handleSelectChanged(key, event.detail.value)}
         @closed=${event => event.stopPropagation()}
       >
         ${options.map(
