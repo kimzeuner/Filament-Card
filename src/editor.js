@@ -75,7 +75,8 @@ class SpoolmanFilamentCardEditor extends LitElement {
           "Choose Preset",
           [
             ["spoolman", "Spoolman"],
-            ["custom", "Custom"],
+            ["custom_attributes", "Custom: Attributes"],
+            ["custom_entities", "Custom: Multiple entities"],
           ],
           value => this.updateConfigValue("preset", value)
         )}
@@ -85,7 +86,8 @@ class SpoolmanFilamentCardEditor extends LitElement {
         <div class="section-title">Grouping</div>
 
         ${preset === "spoolman" ? this.renderSpoolmanOptions() : ""}
-        ${preset === "custom" ? this.renderCustomOptions() : ""}
+        ${preset === "custom_attributes" ? this.renderCustomAttributeOptions() : ""}
+        ${preset === "custom_entities" ? this.renderCustomEntityOptions() : ""}
         
         <div class="section-title">Appearance</div>
         
@@ -206,32 +208,148 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  renderCustomOptions() {
+  renderCustomAttributeOptions() {
     return html`
+      <div class="section-title">Custom Attributes</div>
+
       ${this.renderTextArea(
-        (this._config.custom_entities || []).join("\n"),
-        "Custom entities",
+        (this._config.custom_attribute_entities || []).join("\n"),
+        "Entities with attributes",
         value =>
           this.updateConfigValue(
-            "custom_entities",
+            "custom_attribute_entities",
             value
               .split("\n")
               .map(v => v.trim())
               .filter(Boolean)
           )
       )}
-  
+
       ${this.renderTextForm(
         this._config.custom_max_value ?? 1000,
-        "Max value",
+        "Default max value",
         value => this.updateConfigValue("custom_max_value", Number(value))
       )}
-  
+
       ${this.renderTextForm(
         this._config.custom_unit || "g",
-        "Unit",
+        "Default unit",
         value => this.updateConfigValue("custom_unit", value)
       )}
+
+      ${this.renderCustomSharedOptions()}
+    `;
+  }
+
+  renderCustomEntityOptions() {
+    return html`
+      <div class="section-title">Custom Multiple Entities</div>
+
+      ${this.renderTextArea(
+        JSON.stringify(this._config.custom_items || [], null, 2),
+        "Custom items JSON",
+        value => {
+          try {
+            this.updateConfigValue("custom_items", JSON.parse(value || "[]"));
+          } catch (e) {
+            // Ignore invalid JSON while typing
+          }
+        }
+      )}
+
+      ${this.renderTextForm(
+        this._config.custom_max_value ?? 1000,
+        "Default max value",
+        value => this.updateConfigValue("custom_max_value", Number(value))
+      )}
+
+      ${this.renderTextForm(
+        this._config.custom_unit || "g",
+        "Default unit",
+        value => this.updateConfigValue("custom_unit", value)
+      )}
+
+      ${this.renderCustomSharedOptions()}
+    `;
+  }
+
+  renderCustomSharedOptions() {
+    return html`
+      <div class="section-title">Grouping</div>
+
+      ${this.renderSelect(
+        this._config.group_by || "material",
+        "Group by",
+        [
+          ["material", "Group"],
+          ["color", "Color"],
+          ["vendor", "Vendor"],
+          ["none", "Don't group"],
+        ],
+        value => this.updateConfigValue("group_by", value)
+      )}
+
+      ${this._config.group_by !== "none"
+        ? html`
+            ${this.renderHint(this.groupOrderHint())}
+            <textarea
+              .value=${this.groupOrderValue()}
+              @input=${this.handleGroupOrderChanged}
+            ></textarea>
+
+            ${this.renderSelect(
+              this._config.group_sort_by || "name",
+              "Group sort by",
+              [
+                ["name", "Name"],
+                ["total_remaining_weight", "Total remaining weight"],
+                ["max_remaining_weight", "Max remaining weight"],
+                ["spool_count", "Item count"],
+              ],
+              value => this.updateConfigValue("group_sort_by", value)
+            )}
+
+            ${this.renderSelect(
+              this._config.group_sort_direction || "asc",
+              "Group sort direction",
+              [
+                ["asc", "Ascending"],
+                ["desc", "Descending"],
+              ],
+              value => this.updateConfigValue("group_sort_direction", value)
+            )}
+
+            ${this.renderTextField("group_icon", "Group icon")}
+            ${this.renderSwitch("show_group_title", "Show group title")}
+          `
+        : html``}
+
+      <div class="section-title">Sorting</div>
+
+      ${this.renderSelect(
+        this._config.sort_by || "remaining_weight",
+        "Sort by",
+        [
+          ["remaining_weight", "Value"],
+          ["filament_name", "Name"],
+          ["filament_material", "Group"],
+          ["filament_vendor_name", "Vendor"],
+          ["filament_color_hex", "Color"],
+        ],
+        value => this.updateConfigValue("sort_by", value)
+      )}
+
+      ${this.renderSelect(
+        this._config.sort_direction || "asc",
+        "Sort direction",
+        [
+          ["asc", "Ascending"],
+          ["desc", "Descending"],
+        ],
+        value => this.updateConfigValue("sort_direction", value)
+      )}
+
+      ${this.renderSwitch("use_filament_color", "Use item color")}
     `;
   }
 
