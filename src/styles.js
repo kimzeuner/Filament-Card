@@ -177,6 +177,7 @@ ha-card {
 
 .name {
   font-size: 12px;
+  font-weight: bold;
   margin-top: 6px;
   white-space: nowrap;
   overflow: hidden;
