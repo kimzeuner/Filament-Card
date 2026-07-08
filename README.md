@@ -191,7 +191,7 @@ custom_items:
 | `name` | Fixed name |
 | `unit` | Display unit |
 
----
+  - name: PETG White
 
 ## Planned: Home Assistant Labels
 
@@ -242,7 +242,8 @@ Custom group ordering is supported in every preset.
 
 Unknown groups are automatically appended.
 
----
+```yaml
+type: custom:spoolman-filament-card
 
 # Sorting
 
@@ -344,7 +345,8 @@ custom_attribute_entities:
 group_by: material
 ```
 
----
+show_group_title: true
+show_name: true
 
 ## Custom Multiple Entities
 
@@ -386,10 +388,10 @@ custom_items:
 
 Contributions, feature requests and bug reports are always welcome.
 
-Please use the GitHub issue tracker.
+or add the custom repository.
 
 ---
 
 # License
 
-MIT
+Inspired by the excellent **Spoolman** project and built for the Home Assistant community.

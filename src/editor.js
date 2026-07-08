@@ -51,11 +51,48 @@ class SpoolmanFilamentCardEditor extends LitElement {
       font: inherit;
       resize: vertical;
     }
-
-    .hint {
-      color: var(--secondary-text-color);
-      font-size: 12px;
-      margin-bottom: -8px;
+    .custom-item {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+    }
+    .button-row {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .editor-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      background: var(--primary-color);
+      color: var(--text-primary-color);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .editor-button:hover {
+      filter: brightness(1.08);
+    }
+    
+    .editor-button.secondary {
+      background: var(--secondary-background-color);
+      color: var(--primary-text-color);
+      border: 1px solid var(--divider-color);
+    }
+    
+    .editor-button.danger {
+      background: var(--error-color);
+      color: var(--text-primary-color);
     }
     .custom-item {
       display: grid;
@@ -76,79 +113,346 @@ class SpoolmanFilamentCardEditor extends LitElement {
   render() {
     if (!this._config) return html``;
 
+    const preset = this._config.preset || "spoolman";
+    
     return html`
       <div class="editor">
         <div class="section-title">General</div>
 
+        ${this.renderSelect(
+          this._config.preset || "spoolman",
+          "Choose Preset",
+          [
+            ["spoolman", "Spoolman"],
+            ["custom_attributes", "Custom: Attributes"],
+            ["custom_entities", "Custom: Multiple entities"],
+            ["custom_label", "Custom: HA Label"],
+          ],
+          value => this.updateConfigValue("preset", value)
+        )}
         ${this.renderTextField("title", "Title")}
-        ${this.renderSwitch("hide_archived", "Hide archived spools")}
+        
 
         <div class="section-title">Grouping</div>
 
-        ${this.renderSelect("group_by", "Group by", [
+        ${preset === "spoolman" ? this.renderSpoolmanOptions() : ""}
+        ${preset === "custom_attributes" ? this.renderCustomAttributeOptions() : ""}
+        ${preset === "custom_entities" ? this.renderCustomEntityOptions() : ""}
+        ${preset === "custom_label" ? this.renderCustomLabelOptions() : ""}
+        
+        <div class="section-title">Appearance</div>
+        
+        ${this.renderSelect(
+          this._config.bar_direction || "vertical", "Bar direction",
+          [
+            ["vertical", "Vertical"],
+            ["horizontal", "Horizontal"],
+          ],
+          value => {
+            const config = {
+              ...this._config,
+              bar_direction: value,
+            };
+        
+            this.normalizePositions(config);
+            this.setAndDispatchConfig(config);
+          }
+        )}
+        
+        ${this.renderSelect(
+          this._config.name_position || "bottom", "Name position",
+          this.namePositionOptions(),
+          value => this.updateConfigValue("name_position", value)
+        )}
+        
+        ${this.renderSelect(
+          this._config.value_position || "center", "Value position",
+          this.valuePositionOptions(),
+          value => this.updateConfigValue("value_position", value)
+        )}
+        
+        ${this.renderSwitch("show_name", "Show name")}
+      </div>
+    `;
+  }
+
+  renderSpoolmanOptions() {
+    return html`
+      <div class="section-title">Grouping</div>
+
+      ${this.renderSelect(
+        this._config.group_by || "material",
+        "Group by",
+        [
           ["material", "Material"],
           ["color", "Color"],
           ["vendor", "Vendor"],
           ["none", "Don't group"],
-        ])}
+        ],
+        value => this.updateConfigValue("group_by", value)
+      )}
 
-        ${this._config.group_by !== "none"
-          ? html`
-              <div class="hint">Group order, one entry per line. Empty = automatic sorting.</div>
-              <textarea
-                .value=${this.groupOrderValue()}
-                @change=${this.handleGroupOrderChanged}
-              ></textarea>
+      ${this._config.group_by !== "none"
+        ? html`
+            ${this.renderHint(this.groupOrderHint())}
+            <textarea
+              .value=${this.groupOrderValue()}
+              @input=${this.handleGroupOrderChanged}
+            ></textarea>
 
-              ${this.renderSelect("group_sort_by", "Group sort by", [
+            ${this.renderSelect(
+              this._config.group_sort_by || "name",
+              "Group sort by",
+              [
                 ["name", "Name"],
                 ["total_remaining_weight", "Total remaining weight"],
                 ["max_remaining_weight", "Max remaining weight"],
                 ["spool_count", "Spool count"],
-              ])}
+              ],
+              value => this.updateConfigValue("group_sort_by", value)
+            )}
 
-              ${this.renderSelect("group_sort_direction", "Group sort direction", [
+            ${this.renderSelect(
+              this._config.group_sort_direction || "asc",
+              "Group sort direction",
+              [
                 ["asc", "Ascending"],
                 ["desc", "Descending"],
-              ])}
+              ],
+              value => this.updateConfigValue("group_sort_direction", value)
+            )}
 
-              ${this.renderTextField("group_icon", "Group icon")}
-              ${this.renderSwitch("show_group_title", "Show group title")}
-            `
-          : html``}
+            ${this.renderTextField("group_icon", "Group icon")}
+            ${this.renderSwitch("show_group_title", "Show group title")}
+          `
+        : html``}
 
-        <div class="section-title">Sorting</div>
+      <div class="section-title">Sorting</div>
 
-        ${this.renderSelect("sort_by", "Sort by", [
+      ${this.renderSelect(
+        this._config.sort_by || "remaining_weight",
+        "Sort by",
+        [
           ["remaining_weight", "Remaining weight"],
           ["filament_name", "Filament name"],
           ["filament_material", "Material"],
           ["filament_vendor_name", "Vendor"],
           ["filament_color_hex", "Color"],
-        ])}
+        ],
+        value => this.updateConfigValue("sort_by", value)
+      )}
 
-        ${this.renderSelect("sort_direction", "Sort direction", [
+      ${this.renderSelect(
+        this._config.sort_direction || "asc",
+        "Sort direction",
+        [
           ["asc", "Ascending"],
           ["desc", "Descending"],
-        ])}
+        ],
+        value => this.updateConfigValue("sort_direction", value)
+      )}
 
-        <div class="section-title">Appearance</div>
-
-        ${this.renderSelect("bar_direction", "Bar direction", [
-          ["vertical", "Vertical"],
-          ["horizontal", "Horizontal"],
-        ])}
-
-        ${this.renderSelect("name_position", "Name position", this.namePositionOptions())}
-        ${this.renderSelect("value_position", "Value position", this.valuePositionOptions())}
-
-        ${this.renderNumberField("max_weight", "Max weight fallback")}
-        ${this.renderSwitch("show_name", "Show name")}
-        ${this.renderSwitch("use_filament_color", "Use filament color")}
-      </div>
+      ${this.renderNumberField("max_weight", "Max weight fallback")}
+      ${this.renderSwitch("hide_archived", "Hide archived spools")}
+      ${this.renderSwitch("show_group_title", "Show group title")}
+      ${this.renderSwitch("use_filament_color", "Use filament color")}
     `;
   }
 
+  renderLabelPicker(value, label, onChange) {
+    const schema = [
+      {
+        name: "value",
+        selector: {
+          label: {},
+        },
+      },
+    ];
+  
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${{ value }}
+        .schema=${schema}
+        .computeLabel=${() => label}
+        @value-changed=${event => {
+          onChange(event.detail.value?.value || "");
+        }}
+      ></ha-form>
+    `;
+  }
+
+  renderCustomLabelOptions() {
+    return html`
+      <div class="section-title">Custom HA Label</div>
+  
+      ${this.renderLabelPicker(
+        this._config.custom_label_id || "",
+        "HA Label",
+        value => this.updateConfigValue("custom_label_id", value)
+      )}
+  
+      ${this.renderTextForm(
+        this._config.custom_max_value ?? 1000,
+        "Default max value",
+        value => this.updateConfigValue("custom_max_value", Number(value))
+      )}
+  
+      ${this.renderTextForm(
+        this._config.custom_unit || "g",
+        "Default unit",
+        value => this.updateConfigValue("custom_unit", value)
+      )}
+  
+      ${this.renderCustomSharedOptions()}
+    `;
+  }
+
+  renderEntityPicker(value, label, onChange) {
+    const schema = [
+      {
+        name: "value",
+        selector: {
+          entity: {},
+        },
+      },
+    ];
+  
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${{ value }}
+        .schema=${schema}
+        .computeLabel=${() => label}
+        @value-changed=${event => {
+          onChange(event.detail.value?.value || "");
+        }}
+      ></ha-form>
+    `;
+  }
+
+  renderCustomAttributeOptions() {
+    return html`
+      <div class="section-title">Custom Attributes</div>
+
+      ${this.renderEntityPicker(
+        this._config.custom_attribute_entities || [],
+        "Entities with attributes",
+        value => this.updateConfigValue("custom_attribute_entities", value)
+      )}
+
+      ${this.renderTextForm(
+        this._config.custom_max_value ?? 1000,
+        "Default max value",
+        value => this.updateConfigValue("custom_max_value", Number(value))
+      )}
+
+      ${this.renderTextForm(
+        this._config.custom_unit || "g",
+        "Default unit",
+        value => this.updateConfigValue("custom_unit", value)
+      )}
+
+      ${this.renderCustomSharedOptions()}
+    `;
+  }
+
+  renderCustomSharedOptions() {
+    return html`
+      <div class="section-title">Grouping</div>
+
+      ${this.renderSelect(
+        this._config.group_by || "material",
+        "Group by",
+        [
+          ["material", "Group"],
+          ["color", "Color"],
+          ["vendor", "Vendor"],
+          ["none", "Don't group"],
+        ],
+        value => this.updateConfigValue("group_by", value)
+      )}
+
+      ${this._config.group_by !== "none"
+        ? html`
+            ${this.renderHint(this.groupOrderHint())}
+            <textarea
+              .value=${this.groupOrderValue()}
+              @input=${this.handleGroupOrderChanged}
+            ></textarea>
+
+            ${this.renderSelect(
+              this._config.group_sort_by || "name",
+              "Group sort by",
+              [
+                ["name", "Name"],
+                ["total_remaining_weight", "Total remaining weight"],
+                ["max_remaining_weight", "Max remaining weight"],
+                ["spool_count", "Item count"],
+              ],
+              value => this.updateConfigValue("group_sort_by", value)
+            )}
+
+            ${this.renderSelect(
+              this._config.group_sort_direction || "asc",
+              "Group sort direction",
+              [
+                ["asc", "Ascending"],
+                ["desc", "Descending"],
+              ],
+              value => this.updateConfigValue("group_sort_direction", value)
+            )}
+
+            ${this.renderTextField("group_icon", "Group icon")}
+            ${this.renderSwitch("show_group_title", "Show group title")}
+          `
+        : html``}
+
+      <div class="section-title">Sorting</div>
+
+      ${this.renderSelect(
+        this._config.sort_by || "remaining_weight",
+        "Sort by",
+        [
+          ["remaining_weight", "Value"],
+          ["filament_name", "Name"],
+          ["filament_material", "Group"],
+          ["filament_vendor_name", "Vendor"],
+          ["filament_color_hex", "Color"],
+        ],
+        value => this.updateConfigValue("sort_by", value)
+      )}
+
+      ${this.renderSelect(
+        this._config.sort_direction || "asc",
+        "Sort direction",
+        [
+          ["asc", "Ascending"],
+          ["desc", "Descending"],
+        ],
+        value => this.updateConfigValue("sort_direction", value)
+      )}
+
+      ${this.renderSwitch("use_filament_color", "Use item color")}
+    `;
+  }
+
+  renderHint(text) {
+    return html`
+      <div class="hint">${text}</div>
+    `;
+  }
+  groupOrderHint() {
+    if (this._config.group_by === "color") {
+      return "One color per line. Unknown colors are appended automatically.";
+    }
+  
+    if (this._config.group_by === "vendor") {
+      return "One vendor per line. Unknown vendors are appended automatically.";
+    }
+  
+    return "One material per line. Unknown materials are appended automatically.";
+  }
   renderTextField(key, label) {
     return html`
       <ha-textfield
@@ -170,27 +474,68 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  renderSelect(key, label, options) {
-    const value = this._config[key] ?? DEFAULT_CONFIG[key];
-
+  renderTextForm(value, label, onChange) {
+    const schema = [
+      {
+        name: "value",
+        selector: {
+          text: {},
+        },
+      },
+    ];
+  
     return html`
-      <ha-select
-        label=${label}
+      <ha-form
+        .hass=${this.hass}
+        .data=${{ value }}
+        .schema=${schema}
+        .computeLabel=${() => label}
+        @value-changed=${event => {
+          onChange(event.detail.value?.value ?? "");
+        }}
+      ></ha-form>
+    `;
+  }
+
+  renderTextArea(value, label, onChange) {
+    return html`
+      ${this.renderHint(label)}
+      <textarea
         .value=${value}
-        @selected=${event => this.handleSelectChanged(key, event)}
-        @closed=${event => event.stopPropagation()}
-      >
-        ${options.map(
-          ([optionValue, optionLabel]) => html`
-            <mwc-list-item
-              .value=${optionValue}
-              ?selected=${value === optionValue}
-            >
-              ${optionLabel}
-            </mwc-list-item>
-          `
-        )}
-      </ha-select>
+        @input=${event => onChange(event.target.value)}
+      ></textarea>
+    `;
+  }
+  
+  renderSelect(value, label, options, onChange) {
+    const schema = [
+      {
+        name: "value",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: options.map(([optionValue, label]) => ({
+              value: optionValue,
+              label,
+            })),
+          },
+        },
+      },
+    ];
+  
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${{ value }}
+        .schema=${schema}
+        .computeLabel=${() => label}
+        @value-changed=${event => {
+          const selectedValue = event.detail.value?.value;
+          if (selectedValue !== undefined && selectedValue !== value) {
+            onChange(selectedValue);
+          }
+        }}
+      ></ha-form>
     `;
   }
 
@@ -206,19 +551,18 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
-  handleSelectChanged(key, event) {
-    const value = event.target.value;
-    if (value === undefined || value === this._config[key]) return;
-
+  handleSelectChanged(key, value) {
+    if (value === undefined || value === null || value === this._config[key]) return;
+  
     const config = {
       ...this._config,
       [key]: value,
     };
-
+  
     if (key === "bar_direction") {
       this.normalizePositions(config);
     }
-
+  
     this.setAndDispatchConfig(config);
   }
 
@@ -299,6 +643,41 @@ class SpoolmanFilamentCardEditor extends LitElement {
     }
   }
 
+  updateCustomItem(index, key, value) {
+    const custom_items = [...(this._config.custom_items || [])];
+  
+    custom_items[index] = {
+      ...custom_items[index],
+      [key]: value,
+    };
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+  
+  addCustomItem() {
+    const custom_items = [
+      ...(this._config.custom_items || []),
+      {
+        name: "",
+        value_entity: "",
+        max_entity: "",
+        color_entity: "",
+        group_entity: "",
+        vendor_entity: "",
+        unit: this._config.custom_unit || "g",
+      },
+    ];
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+  
+  removeCustomItem(index) {
+    const custom_items = [...(this._config.custom_items || [])];
+    custom_items.splice(index, 1);
+  
+    this.updateConfigValue("custom_items", custom_items);
+  }
+
   renderCustomEntityOptions() {
     const items = this._config.custom_items || [];
   
@@ -307,9 +686,14 @@ class SpoolmanFilamentCardEditor extends LitElement {
   
       ${items.map((item, index) => this.renderCustomItem(item, index))}
   
-      <mwc-button @click=${this.addCustomItem}>
+      <button
+        class="editor-button"
+        type="button"
+        @click=${() => this.addCustomItem()}
+      >
+        <ha-icon icon="mdi:plus"></ha-icon>
         Add spool
-      </mwc-button>
+      </button>
   
       ${this.renderCustomSharedOptions()}
     `;
@@ -362,69 +746,16 @@ class SpoolmanFilamentCardEditor extends LitElement {
           value => this.updateCustomItem(index, "unit", value)
         )}
   
-        <mwc-button @click=${() => this.removeCustomItem(index)}>
+        <button
+          class="editor-button danger"
+          type="button"
+          @click=${() => this.removeCustomItem(index)}
+        >
+          <ha-icon icon="mdi:delete"></ha-icon>
           Remove spool
-        </mwc-button>
+        </button>
       </div>
     `;
-  }
-
-  renderEntityPicker(value, label, onChange) {
-    const schema = [
-      {
-        name: "value",
-        selector: {
-          entity: {},
-        },
-      },
-    ];
-  
-    return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${{ value }}
-        .schema=${schema}
-        .computeLabel=${() => label}
-        @value-changed=${event => {
-          onChange(event.detail.value?.value || "");
-        }}
-      ></ha-form>
-    `;
-  }
-
-  updateCustomItem(index, key, value) {
-    const custom_items = [...(this._config.custom_items || [])];
-  
-    custom_items[index] = {
-      ...custom_items[index],
-      [key]: value,
-    };
-  
-    this.updateConfigValue("custom_items", custom_items);
-  }
-  
-  addCustomItem() {
-    const custom_items = [
-      ...(this._config.custom_items || []),
-      {
-        name: "",
-        value_entity: "",
-        max_entity: "",
-        color_entity: "",
-        group_entity: "",
-        vendor_entity: "",
-        unit: this._config.custom_unit || "g",
-      },
-    ];
-  
-    this.updateConfigValue("custom_items", custom_items);
-  }
-  
-  removeCustomItem(index) {
-    const custom_items = [...(this._config.custom_items || [])];
-    custom_items.splice(index, 1);
-  
-    this.updateConfigValue("custom_items", custom_items);
   }
 
   setAndDispatchConfig(config) {

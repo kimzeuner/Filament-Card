@@ -3,6 +3,8 @@ export const CARD_TYPE = "filament-card";
 export const EDITOR_TYPE = "filament-card-editor";
 
 export const DEFAULT_CONFIG = {
+  preset: "spoolman",
+  
   title: "Filament",
   group_by: "material",
   group_sort_by: "name",
@@ -19,4 +21,12 @@ export const DEFAULT_CONFIG = {
   show_group_title: true,
   value_position: "center",
   use_filament_color: true,
+
+  // Custom mode
+  custom_attribute_entities: [],
+  custom_items: [],
+  custom_max_value: 1000,
+  custom_unit: "g",
+
+  custom_label_id: "",
 };
