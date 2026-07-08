@@ -3,10 +3,10 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     lib: {
-      entry: "src/spoolman-filament-card.js",
-      name: "SppolamFilamentCard",
+      entry: "src/filament-card.js",
+      name: "FilamentCard",
       formats: ["es"],
-      fileName: () => "spoolman-filament-card.js"
+      fileName: () => "filament-card.js"
     },
     outDir: "dist",
     emptyOutDir: true,
