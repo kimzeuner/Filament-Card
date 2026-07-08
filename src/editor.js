@@ -109,14 +109,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
     this._config = {
       ...DEFAULT_CONFIG,
       ...config,
-    };
-
-    if (this._config.group_icon === "none") {
-      this._config.show_group_icon = false;
-    } else if (this._config.show_group_icon === undefined) {
-      this._config.show_group_icon = true;
-    }
-    
+    };    
   }
 
   render() {
