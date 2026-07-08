@@ -423,20 +423,10 @@ class SpoolmanFilamentCardEditor extends LitElement {
         value => this.updateConfigValue("group_sort_direction", value)
       )}
 
-      ${this.renderSwitch(
-        "show_group_icon",
+      ${this.renderSwitchValue(
+        this._config.group_icon !== "none",
         "Show group icon",
-        value => {
-          const config = {
-            ...this._config,
-            show_group_icon: value,
-            group_icon: value
-              ? this._config.group_icon || "mdi:printer-3d-nozzle"
-              : "none",
-          };
-      
-          this.setAndDispatchConfig(config);
-        }
+        value => this.updateGroupIconVisibility(value)
       )}
       
       ${this._config.group_icon !== "none"
@@ -689,6 +679,18 @@ class SpoolmanFilamentCardEditor extends LitElement {
     `;
   }
 
+  renderSwitchValue(checked, label, onChange) {
+    return html`
+      <div class="switch-row">
+        <ha-switch
+          .checked=${checked}
+          @change=${event => onChange(event.target.checked)}
+        ></ha-switch>
+        <span class="switch-label">${label}</span>
+      </div>
+    `;
+  }
+
   updatePreset(preset) {
     const config = {
       ...this._config,
@@ -739,6 +741,17 @@ class SpoolmanFilamentCardEditor extends LitElement {
     };
 
     this.updateConfigValue("custom_items", custom_items);
+  }
+
+  updateGroupIconVisibility(visible) {
+    const config = {
+      ...this._config,
+      group_icon: visible
+        ? "mdi:printer-3d-nozzle"
+        : "none",
+    };
+  
+    this.setAndDispatchConfig(config);
   }
 
   addCustomItem() {
