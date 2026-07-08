@@ -94,6 +94,13 @@ class SpoolmanFilamentCardEditor extends LitElement {
       background: var(--error-color);
       color: var(--text-primary-color);
     }
+    .custom-item {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+    }
   `;
 
   setConfig(config) {
