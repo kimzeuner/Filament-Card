@@ -1,7 +1,7 @@
 {
-  "name": "spoolman-filament-card",
+  "name": "filament-card",
   "version": "0.0.1",
-  "description": "A Home Assistant Lovelace card for Spoolman Integration",
+  "description": "A Home Assistant Lovelace card for Filament storage",
   "type": "module",
   "scripts": {
     "build": "vite build",
