@@ -4,6 +4,11 @@ A modern and highly configurable Home Assistant Lovelace card to visualize your 
 
 The card automatically discovers all Spoolman filament entities, groups and sorts them, and displays the remaining filament as vertical or horizontal bars.
 
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Card-blue?style=for-the-badge&logo=home-assistant)
+[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge)](https://hacs.xyz/)
+[![License](https://img.shields.io/github/license/kimzeuner/Filament-Card?style=for-the-badge)](https://github.com/kimzeuner/Filament-Card/blob/main/LICENSE)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.me/KZeuner)
+
 ![Preview](images/preview.png)
 
 ---
