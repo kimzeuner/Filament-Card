@@ -11,6 +11,9 @@ export const DEFAULT_CONFIG = {
   group_sort_direction: "asc",
   group_order: [],
   group_icon: "mdi:printer-3d-nozzle",
+  group_title_actions: {},
+  group_title_icons: {},
+  group_title_colors: {},
   max_weight: 1000,
   hide_archived: true,
   sort_by: "remaining_weight",
@@ -29,4 +32,15 @@ export const DEFAULT_CONFIG = {
   custom_unit: "g",
 
   custom_label_id: "",
+
+  tap_action: {
+    action: "more-info",
+  },
+  double_tap_action: {
+    action: "none",
+  },
+  hold_action: {
+    action: "none",
+  },
+  spool_actions: {},
 };

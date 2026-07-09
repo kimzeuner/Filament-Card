@@ -106,6 +106,40 @@ class FilamentCard extends HTMLElement {
         .join(";");
     }
 
+    if (preset === "custom_label") {
+      const labelId = this.config.custom_label_id;
+    
+      if (!labelId || !hass.entities) return "";
+    
+      return Object.entries(hass.entities)
+        .filter(([, entity]) => entity.labels?.includes(labelId))
+        .map(([entityId]) => {
+          const state = hass.states[entityId];
+          if (!state) return `${entityId}|missing`;
+    
+          const attr = state.attributes || {};
+    
+          return [
+            entityId,
+            state.state,
+            attr.value,
+            attr.remaining_weight,
+            attr.max_value,
+            attr.max,
+            attr.name,
+            attr.friendly_name,
+            attr.group,
+            attr.material,
+            attr.vendor,
+            attr.color,
+            attr.filament_color_hex,
+            attr.unit,
+          ].join("|");
+        })
+        .sort()
+        .join(";");
+    }
+    
     return Object.entries(hass.states)
       .filter(([, state]) => state.attributes?.filament_material)
       .map(([entity_id, state]) => {
@@ -132,6 +166,10 @@ class FilamentCard extends HTMLElement {
 
     const items = this.getItems();
 
+    this._actionConfigsByEntity = Object.fromEntries(
+      items.map(item => [item.entity_id, this.getActionConfigsForItem(item)])
+    );
+
     const dynamicMaxWeight = Math.max(
       ...items.map(item =>
         Number(item.state.attributes.filament_weight || item.state.attributes.remaining_weight || 0)
@@ -152,6 +190,8 @@ class FilamentCard extends HTMLElement {
         ${content}
       </ha-card>
     `;
+    this.attachActionHandlers();
+    this.attachGroupTitleActionHandlers();
   }
 
   getItems() {
@@ -203,6 +243,9 @@ class FilamentCard extends HTMLElement {
           vendor: attr.vendor || "",
           color: attr.color || attr.filament_color_hex,
           unit: attr.unit || defaultUnit,
+          tap_action: attr.tap_action,
+          double_tap_action: attr.double_tap_action,
+          hold_action: attr.hold_action,
         });
       })
       .filter(Boolean)
@@ -251,6 +294,9 @@ class FilamentCard extends HTMLElement {
           vendor: vendor || "",
           color,
           unit: item.unit || defaultUnit,
+          tap_action: item.tap_action,
+          double_tap_action: item.double_tap_action,
+          hold_action: item.hold_action,
         });
       })
       .filter(Boolean)
@@ -269,10 +315,106 @@ class FilamentCard extends HTMLElement {
   
     return this.getCustomAttributeItems();
   }
+  
+  getActionConfigsForItem(item) {
+    const entityId = item.entity_id;
+    const attr = item.state?.attributes || {};
+  
+    const spoolOverrides = this.config.spool_actions?.[entityId] || {};
+  
+    return {
+      tap:
+        attr.tap_action ||
+        item.tap_action ||
+        spoolOverrides.tap_action ||
+        this.config.tap_action,
+  
+      double_tap:
+        attr.double_tap_action ||
+        item.double_tap_action ||
+        spoolOverrides.double_tap_action ||
+        this.config.double_tap_action,
+  
+      hold:
+        attr.hold_action ||
+        item.hold_action ||
+        spoolOverrides.hold_action ||
+        this.config.hold_action,
+    };
+  }
+ 
+  getGroupTitleActionConfigs(group) {
+    const overrides =
+      this.config.group_title_actions?.[group] ||
+      this.config.group_actions?.[group] ||
+      {};
+  
+    return {
+      tap: overrides.tap_action || { action: "none" },
+      double_tap: overrides.double_tap_action || { action: "none" },
+      hold: overrides.hold_action || { action: "none" },
+    };
+  }
+  
+  getGroupTitleIcon(group) {
+    return (
+      this.config.group_title_icons?.[group] ||
+      this.config.group_icons?.[group] ||
+      this.config.group_icon
+    );
+  }
+  
+  getGroupTitleColor(group) {
+    return (
+      this.config.group_title_colors?.[group] ||
+      this.config.group_colors?.[group]
+    );
+  }
 
-  createVirtualItem({ entity_id, value, max, name, group, vendor, color, unit }) {
+  attachGroupTitleActionHandlers() {
+    this.shadowRoot.querySelectorAll(".heading[data-group]").forEach(element => {
+      const group = element.dataset.group;
+      if (!group) return;
+  
+      const actionConfigs = this.getGroupTitleActionConfigs(group);
+  
+      element.addEventListener("click", event => {
+        event.stopPropagation();
+        this.handleTap(group, actionConfigs);
+      });
+  
+      element.addEventListener("dblclick", event => {
+        event.stopPropagation();
+        this.handleDoubleTap(group, actionConfigs);
+      });
+  
+      element.addEventListener("pointerdown", () =>
+        this.handleHoldStart(group, actionConfigs)
+      );
+      element.addEventListener("pointerup", () => this.handleHoldEnd());
+      element.addEventListener("pointerleave", () => this.handleHoldEnd());
+      element.addEventListener("pointercancel", () => this.handleHoldEnd());
+    });
+  }
+
+  createVirtualItem({
+    entity_id,
+    value,
+    max,
+    name,
+    group,
+    vendor,
+    color,
+    unit,
+    tap_action,
+    double_tap_action,
+    hold_action,
+  }) {
     return {
       entity_id,
+      tap_action,
+      double_tap_action,
+      hold_action,
       state: {
         state: String(value),
         attributes: {
@@ -285,28 +427,119 @@ class FilamentCard extends HTMLElement {
           filament_color_hex: color,
           archived: false,
           custom_unit: unit,
+          tap_action,
+          double_tap_action,
+          hold_action,
         },
       },
     };
   }
 
+  fireHassAction(entityId, actionConfigs, action) {
+    this.dispatchEvent(
+      new CustomEvent("hass-action", {
+        detail: {
+          config: {
+            entity: entityId,
+            tap_action: actionConfigs.tap || { action: "more-info" },
+            double_tap_action: actionConfigs.double_tap || { action: "none" },
+            hold_action: actionConfigs.hold || { action: "none" },
+          },
+          action,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+  
+  handleTap(entityId, actionConfigs) {
+    if (this._holdFired) {
+      this._holdFired = false;
+      return;
+    }
+  
+    clearTimeout(this._tapTimer);
+  
+    this._tapTimer = setTimeout(() => {
+      this.fireHassAction(entityId, actionConfigs, "tap");
+    }, 250);
+  }
+  
+  handleDoubleTap(entityId, actionConfigs) {
+    clearTimeout(this._tapTimer);
+    this.fireHassAction(entityId, actionConfigs, "double_tap");
+  }
+  
+  handleHoldStart(entityId, actionConfigs) {
+    this._holdFired = false;
+    clearTimeout(this._holdTimer);
+  
+    this._holdTimer = setTimeout(() => {
+      this._holdFired = true;
+      this.fireHassAction(entityId, actionConfigs, "hold");
+    }, 500);
+  }
+  
+  handleHoldEnd() {
+    clearTimeout(this._holdTimer);
+  }
+  
+  attachActionHandlers() {
+    this.shadowRoot.querySelectorAll(".spool").forEach(element => {
+      const entityId = element.dataset.entity;
+      if (!entityId) return;
+  
+      const actionConfigs = this._actionConfigsByEntity?.[entityId] || {
+        tap: this.config.tap_action,
+        double_tap: this.config.double_tap_action,
+        hold: this.config.hold_action,
+      };
+  
+      element.addEventListener("click", event => {
+        event.stopPropagation();
+        this.handleTap(entityId, actionConfigs);
+      });
+  
+      element.addEventListener("dblclick", event => {
+        event.stopPropagation();
+        this.handleDoubleTap(entityId, actionConfigs);
+      });
+  
+      element.addEventListener("pointerdown", () =>
+        this.handleHoldStart(entityId, actionConfigs)
+      );
+      element.addEventListener("pointerup", () => this.handleHoldEnd());
+      element.addEventListener("pointerleave", () => this.handleHoldEnd());
+      element.addEventListener("pointercancel", () => this.handleHoldEnd());
+    });
+  }
+  
   renderGrouped(items, dynamicMaxWeight) {
     let groups = [...new Set(items.map(item => getGroupValue(this.config, item)))];
     groups = sortGroups(this.config, groups, items);
 
     return groups.map(group => {
+      const groupIcon = this.getGroupTitleIcon(group);
+      const groupColor = this.getGroupTitleColor(group);
+      const groupActionConfigs = this.getGroupTitleActionConfigs(group);
       const groupItems = items.filter(item => getGroupValue(this.config, item) === group);
       if (!groupItems.length) return "";
 
       return `
         ${this.config.show_group_title ? `
-          <div class="heading">
+          <div
+            class="heading clickable"
+            data-group="${group}"
+          >
             ${
-              this.config.group_icon !== "none"
-                ? `<ha-icon icon="${this.config.group_icon}"></ha-icon>`
+              groupIcon !== "none"
+                ? `<ha-icon icon="${groupIcon}"></ha-icon>`
                 : ""
             }
-            <span>${group}</span>
+            <span ${groupColor ? `style="color:${groupColor};"` : ""}>
+              ${group}
+            </span>
           </div>
         ` : ""}
 
@@ -372,4 +605,6 @@ class FilamentCard extends HTMLElement {
   }
 }
 
-customElements.define(CARD_TYPE, SpoolmanFilamentCard);
+if (!customElements.get(CARD_TYPE)) {
+  customElements.define(CARD_TYPE, FilamentCard);
+}
