@@ -490,11 +490,17 @@ class FilamentCard extends HTMLElement {
         ${this.config.show_group_title ? `
           <div class="heading">
             ${
-              this.config.group_icon !== "none"
-                ? `<ha-icon icon="${this.config.group_icon}"></ha-icon>`
+              this.getGroupIcon(group) !== "none"
+                ? `<ha-icon icon="${this.getGroupIcon(group)}"></ha-icon>`
                 : ""
             }
-            <span>${group}</span>
+            <span
+              ${
+                this.getGroupColor(group)
+                  ? `style="color:${this.getGroupColor(group)};"`
+                  : ""
+              }
+            >${group}</span>
           </div>
         ` : ""}
 
