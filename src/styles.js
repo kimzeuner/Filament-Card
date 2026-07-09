@@ -27,6 +27,15 @@ ha-card {
   color: var(--secondary-text-color);
 }
 
+.heading.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.heading.clickable:hover {
+  opacity: 0.85;
+}
+
 .spools {
   display: flex;
   gap: 0;
