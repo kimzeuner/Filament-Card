@@ -29,4 +29,14 @@ export const DEFAULT_CONFIG = {
   custom_unit: "g",
 
   custom_label_id: "",
+
+  tap_action: {
+    action: "more-info",
+  },
+  double_tap_action: {
+    action: "none",
+  },
+  hold_action: {
+    action: "none",
+  },
 };
