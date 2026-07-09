@@ -39,4 +39,5 @@ export const DEFAULT_CONFIG = {
   hold_action: {
     action: "none",
   },
+  spool_actions: {},
 };
