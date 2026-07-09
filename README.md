@@ -2,7 +2,7 @@
 <tr>
 <td width="140">
 
-<img src="https://raw.githubusercontent.com/kimzeuner/Filament-Card/main/images/icon.png" width="140" alt="Filament Card">
+<img src="https://raw.githubusercontent.com/kimzeuner/Filament-Card/main/images/filament-card-icon.png" width="140" alt="Filament Card">
 
 </td>
 <td>
