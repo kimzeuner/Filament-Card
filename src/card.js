@@ -341,9 +341,12 @@ class FilamentCard extends HTMLElement {
         this.config.hold_action,
     };
   }
-
-  getActionConfigsForGroup(group) {
-    const overrides = this.config.group_actions?.[group] || {};
+ 
+  getGroupTitleActionConfigs(group) {
+    const overrides =
+      this.config.group_title_actions?.[group] ||
+      this.config.group_actions?.[group] ||
+      {};
   
     return {
       tap: overrides.tap_action || { action: "none" },
@@ -352,12 +355,19 @@ class FilamentCard extends HTMLElement {
     };
   }
   
-  getGroupIcon(group) {
-    return this.config.group_icons?.[group] || this.config.group_icon;
+  getGroupTitleIcon(group) {
+    return (
+      this.config.group_title_icons?.[group] ||
+      this.config.group_icons?.[group] ||
+      this.config.group_icon
+    );
   }
   
-  getGroupColor(group) {
-    return this.config.group_colors?.[group];
+  getGroupTitleColor(group) {
+    return (
+      this.config.group_title_colors?.[group] ||
+      this.config.group_colors?.[group]
+    );
   }
 
   createVirtualItem({
