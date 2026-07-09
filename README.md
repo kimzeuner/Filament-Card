@@ -1,120 +1,90 @@
 # Filament Card
 
-A modern and highly configurable Home Assistant Lovelace card for visualizing **filament**, **consumables**, and other resource-based entities.
+A modern and highly configurable Home Assistant Lovelace card for
+visualizing **filament**, **consumables**, and other resource-based
+entities.
 
-Originally built for **Spoolman**, the card now supports multiple presets, allowing it to visualize data from Spoolman, custom entities, or user-defined data sources while providing a consistent user experience.
+Originally built for **Spoolman**, the card has evolved into a flexible
+visualization card supporting multiple presets, rich customization, and
+the full Home Assistant action model.
 
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Card-blue?style=for-the-badge&logo=home-assistant)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge)](https://hacs.xyz/)
+![Home
+Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Card-blue?style=for-the-badge&logo=home-assistant)
+[![HACS
+Custom](https://img.shields.io/badge/HACS-Custom-orange?style=for-the-badge)](https://hacs.xyz/)
 [![License](https://img.shields.io/github/license/kimzeuner/Filament-Card?style=for-the-badge)](https://github.com/kimzeuner/Filament-Card/blob/main/LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.me/KZeuner)
 
 ![Preview](images/preview.png)
 
----
+------------------------------------------------------------------------
 
-# Features
+# ✨ Features
 
 ## Spoolman
 
-- 📦 Automatic discovery of all Spoolman filament entities
-- 🎨 Group by Material, Color, Vendor or None
-- 🌈 Use filament colors automatically
-- 📊 Dynamic maximum weight using `filament_weight`
-- 🗂 Hide archived spools
-- 🔃 Flexible sorting and grouping
+-   Automatic discovery of Spoolman filament entities
+-   Dynamic maximum weight from `filament_weight`
+-   Material, Color, Vendor or no grouping
+-   Custom group ordering
+-   Per spool actions
+-   Group title icons, colors and actions
+-   Optional filament colors
+-   Hide archived spools
 
 ## Custom Presets
 
-- 📑 Custom entities with attributes
-- 🔗 Custom items composed from multiple entities
-- 🏷 Planned Home Assistant Label support
-- 🧩 Same appearance and configuration options as the Spoolman preset
+-   **Custom Attributes**
+-   **Custom Multiple Entities**
+-   Planned **Home Assistant Label** preset
 
 ## Appearance
 
-- 📊 Vertical or horizontal bars
-- 👀 Show or hide names
-- 📑 Show or hide group titles
-- 📍 Configurable value position
-- 🏷 Configurable name position
-- 🎨 Automatic text color calculation
-- 🌙 Fully compatible with Home Assistant themes
+-   Vertical and horizontal bars
+-   Configurable name/value positions
+-   Group titles
+-   Automatic text color
+-   Home Assistant theme support
 
-## Editor
+## Actions
 
-- Visual Home Assistant editor
-- Entity picker support
-- Dynamic configuration based on selected preset
-- No YAML required for most configurations
+Supports the native Home Assistant action model: - Tap - Double Tap -
+Hold
 
----
+Supported actions: - More Info - Navigate - URL - Call Service -
+Assist - None
 
-# Requirements
+------------------------------------------------------------------------
 
-- Home Assistant
-- HACS (recommended)
-
-**Spoolman preset additionally requires:**
-
-- Spoolman Integration
-
----
-
-# Installation
+# 📦 Installation
 
 ## HACS
 
-1. Open **HACS**
-2. Add this repository as a **Custom Repository**
-3. Install **Filament Card**
-4. Restart Home Assistant
-5. Refresh your browser
+1.  Open HACS
+2.  Add this repository as a Custom Repository
+3.  Install **Filament Card**
+4.  Restart Home Assistant
+5.  Refresh your browser
 
----
+------------------------------------------------------------------------
 
-# Presets
+# 🚀 Presets
 
-The card currently supports three presets.
+## Spoolman
 
-## 1. Spoolman
-
-The default preset.
-
-Automatically discovers all Spoolman filament entities.
-
-```yaml
-type: custom:spoolman-filament-card
-
+``` yaml
+type: custom:filament-card
 preset: spoolman
 ```
 
-No additional configuration is required.
+Automatically discovers all Spoolman entities.
 
----
+## Custom Attributes
 
-## 2. Custom Attributes
+Entities expose all required information through attributes.
 
-Displays entities that already contain all required display information in their attributes.
-
-Example entity:
-
-```yaml
-state: 420
-
-attributes:
-  friendly_name: PLA Black
-  group: PLA
-  vendor: Prusament
-  color: "#111111"
-  max_value: 1000
-  unit: g
-```
-
-Example configuration:
-
-```yaml
-type: custom:spoolman-filament-card
+``` yaml
+type: custom:filament-card
 
 preset: custom_attributes
 
@@ -123,275 +93,198 @@ custom_attribute_entities:
   - sensor.petg_white
 ```
 
-### Supported attributes
+Supported attributes:
 
-| Attribute | Description |
-|------------|-------------|
-| `friendly_name` | Display name |
-| `group` | Group name |
-| `vendor` | Vendor |
-| `color` | Bar color |
-| `max_value` | Maximum value |
-| `unit` | Display unit |
-| `value` *(optional)* | Current value |
-| `remaining_weight` *(optional)* | Alternative current value |
+  Attribute                  Description
+  -------------------------- ---------------
+  friendly_name              Display name
+  group                      Group
+  vendor                     Vendor
+  color                      Bar color
+  max_value                  Maximum
+  unit                       Unit
+  value / remaining_weight   Current value
 
----
+## Custom Multiple Entities
 
-## 3. Custom Multiple Entities
-
-Allows combining several Home Assistant entities into one displayed item.
-
-Each item can use either fixed values or entity references.
-
-Example:
-
-```yaml
-type: custom:spoolman-filament-card
+``` yaml
+type: custom:filament-card
 
 preset: custom_entities
 
 custom_items:
-
   - name: PLA Black
-
     value_entity: sensor.pla_black_remaining
     max_entity: sensor.pla_black_capacity
-
     color_entity: sensor.pla_black_color
-    group_entity: sensor.pla_black_material
-    vendor_entity: sensor.pla_black_vendor
-
-    unit: g
-
-  - name: PETG White
-
-    value_entity: sensor.petg_remaining
-    max: 750
-
-    color: "#ffffff"
-    group: PETG
-    vendor: Generic
+    group_entity: sensor.pla_black_group
 ```
 
-### Supported fields
+------------------------------------------------------------------------
 
-| Field | Description |
-|---------|-------------|
-| `value_entity` | Current value entity |
-| `max_entity` | Maximum value entity |
-| `max` | Fixed maximum |
-| `color_entity` | Color entity |
-| `color` | Fixed color |
-| `group_entity` | Group entity |
-| `group` | Fixed group |
-| `vendor_entity` | Vendor entity |
-| `vendor` | Fixed vendor |
-| `name_entity` | Name entity |
-| `name` | Fixed name |
-| `unit` | Display unit |
+# 🖱 Actions
 
-  - name: PETG White
+Global actions:
 
-## Planned: Home Assistant Labels
-
-A future preset will automatically discover entities based on Home Assistant Labels.
-
-```yaml
-preset: custom_label
+``` yaml
+tap_action:
+  action: navigate
+  navigation_path: /dashboard-test/filament
 ```
 
-Instead of manually selecting entities, simply assign the same label to all relevant entities.
+Per Spool (Spoolman):
 
----
-
-# Common Configuration
-
-The following options are available for all presets unless stated otherwise.
-
-| Option | Default | Description |
-|---------|---------|-------------|
-| `title` | Filament | Card title |
-| `bar_direction` | vertical | Vertical or horizontal bars |
-| `name_position` | bottom | Name position |
-| `value_position` | center | Value position |
-| `show_name` | true | Show item name |
-| `show_group_title` | true | Show group heading |
-| `group_icon` | mdi:printer-3d-nozzle | Group icon |
-| `group_by` | material | Material / Group, Color, Vendor, None |
-| `group_order` | [] | Custom group order |
-| `group_sort_by` | name | Group sorting |
-| `group_sort_direction` | asc | Group sorting direction |
-| `sort_by` | remaining_weight | Item sorting |
-| `sort_direction` | asc | Item sorting direction |
-| `use_filament_color` | true | Use entity color |
-| `max_weight` | 1000 | Fallback maximum weight (Spoolman) |
-
----
-
-# Grouping
-
-Supported grouping modes:
-
-- Material / Group
-- Color
-- Vendor
-- None
-
-Custom group ordering is supported in every preset.
-
-Unknown groups are automatically appended.
-
-```yaml
-type: custom:spoolman-filament-card
-
-# Sorting
-
-## Groups
-
-- Name
-- Total remaining value
-- Maximum remaining value
-- Item count
-
-## Items
-
-- Remaining value
-- Name
-- Material / Group
-- Vendor
-- Color
-
-Ascending and descending sorting are supported.
-
----
-
-# Appearance
-
-- Vertical bars
-- Horizontal bars
-- Automatic value scaling
-- Automatic text color
-- Group icon
-- Optional entity colors
-- Configurable name position
-- Configurable value position
-
----
-
-# Editor
-
-The visual editor adapts automatically to the selected preset.
-
-## Spoolman
-
-Displays all Spoolman-specific options.
-
-## Custom Attributes
-
-Supports selecting entities using the Home Assistant Entity Picker.
-
-## Custom Multiple Entities
-
-Supports creating multiple items.
-
-Each item can be configured individually using Home Assistant Entity Pickers for:
-
-- Value Entity
-- Maximum Entity
-- Color Entity
-- Group Entity
-- Vendor Entity
-- Name Entity
-
----
-
-# Examples
-
-## Minimal
-
-```yaml
-type: custom:spoolman-filament-card
+``` yaml
+spool_actions:
+  sensor.spoolman_pla_black:
+    tap_action:
+      action: navigate
+      navigation_path: /dashboard-test/pla
 ```
 
----
+Per Custom Item:
 
-## Spoolman
+``` yaml
+custom_items:
+  - name: PLA
+    value_entity: sensor.pla
+    tap_action:
+      action: more-info
+```
 
-```yaml
-type: custom:spoolman-filament-card
+------------------------------------------------------------------------
 
+# 🎨 Group Title Overrides
+
+Configure group titles individually.
+
+``` yaml
+group_title_icons:
+  PLA: mdi:printer-3d-nozzle
+  PETG: mdi:water
+
+group_title_colors:
+  PLA: "#4caf50"
+
+group_title_actions:
+  PLA:
+    tap_action:
+      action: navigate
+      navigation_path: /dashboard-test/pla
+```
+
+Supported: - Icons - Colors - Tap / Double Tap / Hold actions
+
+------------------------------------------------------------------------
+
+# ⚙ Common Options
+
+  Option                 Default
+  ---------------------- -----------------------
+  title                  Filament
+  preset                 spoolman
+  group_by               material
+  group_order            \[\]
+  group_sort_by          name
+  group_sort_direction   asc
+  sort_by                remaining_weight
+  sort_direction         asc
+  bar_direction          vertical
+  name_position          bottom
+  value_position         center
+  show_name              true
+  show_group_title       true
+  group_icon             mdi:printer-3d-nozzle
+  use_filament_color     true
+
+------------------------------------------------------------------------
+
+# 🧩 Visual Editor
+
+The editor supports:
+
+-   Preset selection
+-   Entity Picker
+-   Icon Picker
+-   Native Home Assistant action editor
+-   Collapsible sections
+-   Group Title Overrides
+-   Automatic group detection
+
+------------------------------------------------------------------------
+
+# 📋 Examples
+
+Minimal:
+
+``` yaml
+type: custom:filament-card
+```
+
+Spoolman:
+
+``` yaml
+type: custom:filament-card
 preset: spoolman
-
 group_by: material
-bar_direction: vertical
-show_group_title: true
-use_filament_color: true
 ```
 
----
+Custom Attributes:
 
-## Custom Attributes
-
-```yaml
-type: custom:spoolman-filament-card
-
+``` yaml
+type: custom:filament-card
 preset: custom_attributes
 
 custom_attribute_entities:
   - sensor.pla_black
-  - sensor.pla_white
-
-group_by: material
 ```
 
-show_group_title: true
-show_name: true
+Custom Multiple Entities:
 
-## Custom Multiple Entities
-
-```yaml
-type: custom:spoolman-filament-card
-
+``` yaml
+type: custom:filament-card
 preset: custom_entities
 
 custom_items:
-
   - name: PLA Black
-
     value_entity: sensor.pla_black_remaining
-    max_entity: sensor.pla_black_capacity
-
-    color: "#111111"
-    group: PLA
 ```
 
----
+------------------------------------------------------------------------
 
-# Roadmap
+# 🛣 Roadmap
+
+## Completed
+
+-   ✅ Spoolman preset
+-   ✅ Custom Attributes preset
+-   ✅ Custom Multiple Entities preset
+-   ✅ Per spool actions
+-   ✅ Group title icons
+-   ✅ Group title colors
+-   ✅ Group title actions
+-   ✅ Visual editor
+-   ✅ Native HA actions
 
 ## Planned
 
-- [ ] Home Assistant Label preset
-- [ ] Label picker
-- [ ] Attribute picker
-- [ ] Per-item icons
-- [ ] Click actions
-- [ ] Localization
-- [ ] Percentage display
-- [ ] Additional display modes
-- [ ] Statistics card
+-   Home Assistant Label preset
+-   Localization
+-   Statistics mode
+-   Additional display styles
 
----
+------------------------------------------------------------------------
 
-# Contributing
+# 🤝 Contributing
 
-Contributions, feature requests and bug reports are always welcome.
+Contributions, feature requests and bug reports are welcome.
 
-or add the custom repository.
+Please use the GitHub issue tracker.
 
----
+------------------------------------------------------------------------
 
-# License
+# 📄 License
 
-Inspired by the excellent **Spoolman** project and built for the Home Assistant community.
+MIT
+
+Inspired by **Spoolman** and built for the Home Assistant community.
