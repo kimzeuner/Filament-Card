@@ -343,7 +343,7 @@ class SpoolmanFilamentCard extends HTMLElement {
     );
   }
   
-  handleTap(entityId) {
+  handleTap(entityId, actionConfigs) {
     if (this._holdFired) {
       this._holdFired = false;
       return;
@@ -352,22 +352,22 @@ class SpoolmanFilamentCard extends HTMLElement {
     clearTimeout(this._tapTimer);
   
     this._tapTimer = setTimeout(() => {
-      this.fireHassAction(entityId, "tap");
+      this.fireHassAction(entityId, actionConfigs, "tap");
     }, 250);
   }
   
-  handleDoubleTap(entityId) {
+  handleDoubleTap(entityId, actionConfigs) {
     clearTimeout(this._tapTimer);
-    this.fireHassAction(entityId, "double_tap");
+    this.fireHassAction(entityId, actionConfigs, "double_tap");
   }
   
-  handleHoldStart(entityId) {
+  handleHoldStart(entityId, actionConfigs) {
     this._holdFired = false;
     clearTimeout(this._holdTimer);
   
     this._holdTimer = setTimeout(() => {
       this._holdFired = true;
-      this.fireHassAction(entityId, "hold");
+      this.fireHassAction(entityId, actionConfigs, "hold");
     }, 500);
   }
   
@@ -376,21 +376,29 @@ class SpoolmanFilamentCard extends HTMLElement {
   }
   
   attachActionHandlers() {
+    const actionConfigs = {
+      tap: this.config.tap_action,
+      double_tap: this.config.double_tap_action,
+      hold: this.config.hold_action,
+    };
+  
     this.shadowRoot.querySelectorAll(".spool").forEach(element => {
       const entityId = element.dataset.entity;
       if (!entityId) return;
   
       element.addEventListener("click", event => {
         event.stopPropagation();
-        this.handleTap(entityId);
+        this.handleTap(entityId, actionConfigs);
       });
   
       element.addEventListener("dblclick", event => {
         event.stopPropagation();
-        this.handleDoubleTap(entityId);
+        this.handleDoubleTap(entityId, actionConfigs);
       });
   
-      element.addEventListener("pointerdown", () => this.handleHoldStart(entityId));
+      element.addEventListener("pointerdown", () =>
+        this.handleHoldStart(entityId, actionConfigs)
+      );
       element.addEventListener("pointerup", () => this.handleHoldEnd());
       element.addEventListener("pointerleave", () => this.handleHoldEnd());
       element.addEventListener("pointercancel", () => this.handleHoldEnd());
