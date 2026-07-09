@@ -202,4 +202,32 @@ ha-card {
   color: var(--secondary-text-color);
   padding: 8px 0;
 }
+
+.expandable-section {
+  border: 1px solid var(--divider-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.expandable-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  background: var(--secondary-background-color);
+}
+
+.expandable-header:hover {
+  filter: brightness(1.03);
+}
+
+.expandable-content {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
 `;
