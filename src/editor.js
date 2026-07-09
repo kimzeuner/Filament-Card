@@ -1,5 +1,9 @@
 import { LitElement, html, css } from "lit";
 import { DEFAULT_CONFIG, EDITOR_TYPE } from "./const.js";
+import {
+  getGroupValue,
+  sortGroups,
+} from "./helpers.js";
 const ACTION_OPTIONS = [
   ["more-info", "More info"],
   ["navigate", "Navigate"],
@@ -397,14 +401,13 @@ class SpoolmanFilamentCardEditor extends LitElement {
   renderGroupTitleOverrides() {
     if (this._config.group_by === "none") return html``;
   
-    const groupOrder = this._config.group_order || [];
-    const groups = Array.isArray(groupOrder) ? groupOrder : [];
+    const groups = this.getAvailableGroups();
   
     if (!groups.length) {
       return html`
         <div class="section-title">Group Title Overrides</div>
         ${this.renderHint(
-          "Add group names to Custom group order first to configure individual group title icons, colors and actions."
+          "No groups found yet. Groups will appear here once matching entities are available."
         )}
       `;
     }
@@ -413,13 +416,168 @@ class SpoolmanFilamentCardEditor extends LitElement {
       <div class="section-title">Group Title Overrides</div>
   
       ${this.renderHint(
-        "Configure individual icons, colors and tap actions for specific group titles."
+        "Configure individual icons, colors and actions for specific group titles."
       )}
   
       ${groups.map(group => this.renderGroupTitleOverride(group))}
     `;
   }
 
+  getAvailableGroups() {
+    if (!this.hass || !this._config || this._config.group_by === "none") {
+      return [];
+    }
+  
+    const preset = this._config.preset || "spoolman";
+    const items = this.getPreviewItemsForGroups(preset);
+  
+    let groups = [...new Set(
+      items
+        .map(item => getGroupValue(this._config, item))
+        .filter(Boolean)
+    )];
+  
+    groups = sortGroups(this._config, groups, items);
+  
+    const groupOrder = Array.isArray(this._config.group_order)
+      ? this._config.group_order
+      : [];
+  
+    return [
+      ...groupOrder.filter(group => groups.includes(group)),
+      ...groups.filter(group => !groupOrder.includes(group)),
+    ];
+  }
+
+  getPreviewItemsForGroups(preset) {
+    if (preset === "custom_entities") {
+      return this.getCustomEntityPreviewItems();
+    }
+  
+    if (preset === "custom_attributes" || preset === "custom_label") {
+      return this.getCustomAttributePreviewItems(preset);
+    }
+  
+    return this.getSpoolmanPreviewItems();
+  }
+
+  getSpoolmanPreviewItems() {
+    return Object.entries(this.hass.states)
+      .map(([entity_id, state]) => ({ entity_id, state }))
+      .filter(({ state }) => state.attributes?.filament_material);
+  }
+
+  getCustomAttributePreviewItems(preset) {
+    const entities =
+      preset === "custom_label"
+        ? this.getEntitiesFromSelectedLabel()
+        : this._config.custom_attribute_entities || [];
+  
+    const defaultMax = Number(this._config.custom_max_value || 1000);
+    const defaultUnit = this._config.custom_unit || "g";
+  
+    return entities
+      .map(entity_id => {
+        const source = this.hass.states[entity_id];
+        if (!source) return null;
+  
+        const attr = source.attributes || {};
+        const value = Number(attr.value ?? attr.remaining_weight ?? source.state);
+        if (Number.isNaN(value)) return null;
+  
+        return this.createPreviewItem({
+          entity_id,
+          value,
+          max: Number(attr.max_value ?? attr.max ?? defaultMax),
+          name: attr.name || attr.friendly_name || entity_id,
+          group: attr.group || attr.material || "Custom",
+          vendor: attr.vendor || "",
+          color: attr.color || attr.filament_color_hex,
+          unit: attr.unit || defaultUnit,
+        });
+      })
+      .filter(Boolean);
+  }
+
+  getCustomEntityPreviewItems() {
+    const items = this._config.custom_items || [];
+    const defaultMax = Number(this._config.custom_max_value || 1000);
+    const defaultUnit = this._config.custom_unit || "g";
+  
+    return items
+      .map((item, index) => {
+        const valueState = this.hass.states[item.value_entity];
+        if (!valueState) return null;
+  
+        const value = Number(valueState.state);
+        if (Number.isNaN(value)) return null;
+  
+        const max = item.max_entity
+          ? Number(this.hass.states[item.max_entity]?.state ?? defaultMax)
+          : Number(item.max ?? item.max_value ?? defaultMax);
+  
+        const color = item.color_entity
+          ? this.hass.states[item.color_entity]?.state
+          : item.color;
+  
+        const group = item.group_entity
+          ? this.hass.states[item.group_entity]?.state
+          : item.group;
+  
+        const vendor = item.vendor_entity
+          ? this.hass.states[item.vendor_entity]?.state
+          : item.vendor;
+  
+        const name = item.name_entity
+          ? this.hass.states[item.name_entity]?.state
+          : item.name;
+  
+        return this.createPreviewItem({
+          entity_id: item.value_entity || `custom_item_${index}`,
+          value,
+          max: Number.isNaN(max) ? defaultMax : max,
+          name: name || valueState.attributes?.friendly_name || item.value_entity,
+          group: group || "Custom",
+          vendor: vendor || "",
+          color,
+          unit: item.unit || defaultUnit,
+        });
+      })
+      .filter(Boolean);
+  }
+
+  getEntitiesFromSelectedLabel() {
+    const labelId = this._config.custom_label_id;
+  
+    if (!labelId || !this.hass?.entities) {
+      return [];
+    }
+  
+    return Object.entries(this.hass.entities)
+      .filter(([, entity]) => entity.labels?.includes(labelId))
+      .map(([entityId]) => entityId);
+  }
+
+  createPreviewItem({ entity_id, value, max, name, group, vendor, color, unit }) {
+    return {
+      entity_id,
+      state: {
+        state: String(value),
+        attributes: {
+          friendly_name: name,
+          remaining_weight: value,
+          filament_weight: max,
+          filament_material: group,
+          filament_name: name,
+          filament_vendor_name: vendor,
+          filament_color_hex: color,
+          archived: false,
+          custom_unit: unit,
+        },
+      },
+    };
+  }
+  
   renderGroupTitleOverride(group) {
     const icon = this._config.group_title_icons?.[group] || "";
     const color = this._config.group_title_colors?.[group] || "";
