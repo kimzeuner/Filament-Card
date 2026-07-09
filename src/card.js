@@ -9,7 +9,7 @@ import {
   sortGroups,
 } from "./helpers.js";
 
-class SpoolmanFilamentCard extends HTMLElement {
+class FilamentCard extends HTMLElement {
   static getConfigElement() {
     return document.createElement(EDITOR_TYPE);
   }
