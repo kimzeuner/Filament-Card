@@ -342,6 +342,24 @@ class FilamentCard extends HTMLElement {
     };
   }
 
+  getActionConfigsForGroup(group) {
+    const overrides = this.config.group_actions?.[group] || {};
+  
+    return {
+      tap: overrides.tap_action || { action: "none" },
+      double_tap: overrides.double_tap_action || { action: "none" },
+      hold: overrides.hold_action || { action: "none" },
+    };
+  }
+  
+  getGroupIcon(group) {
+    return this.config.group_icons?.[group] || this.config.group_icon;
+  }
+  
+  getGroupColor(group) {
+    return this.config.group_colors?.[group];
+  }
+
   createVirtualItem({
     entity_id,
     value,
