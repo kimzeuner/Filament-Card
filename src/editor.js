@@ -178,6 +178,7 @@ class SpoolmanFilamentCardEditor extends LitElement {
       )}
 
       ${this.renderGroupingDetails("Spool count")}
+      ${this.renderGroupTitleOverrides()}
 
       <div class="section-title">Sorting</div>
 
@@ -370,6 +371,8 @@ class SpoolmanFilamentCardEditor extends LitElement {
 
       ${this.renderGroupingDetails("Item count")}
 
+      ${this.renderGroupTitleOverrides()}
+
       <div class="section-title">Sorting</div>
 
       ${this.renderSelect(
@@ -388,6 +391,59 @@ class SpoolmanFilamentCardEditor extends LitElement {
       ${this.renderSortDirection()}
 
       ${this.renderSwitch("use_filament_color", "Use item color")}
+    `;
+  }
+
+  renderGroupTitleOverrides() {
+    if (this._config.group_by === "none") return html``;
+  
+    const groupOrder = this._config.group_order || [];
+    const groups = Array.isArray(groupOrder) ? groupOrder : [];
+  
+    if (!groups.length) {
+      return html`
+        <div class="section-title">Group Title Overrides</div>
+        ${this.renderHint(
+          "Add group names to Custom group order first to configure individual group title icons, colors and actions."
+        )}
+      `;
+    }
+  
+    return html`
+      <div class="section-title">Group Title Overrides</div>
+  
+      ${this.renderHint(
+        "Configure individual icons, colors and tap actions for specific group titles."
+      )}
+  
+      ${groups.map(group => this.renderGroupTitleOverride(group))}
+    `;
+  }
+
+  renderGroupTitleOverride(group) {
+    const icon = this._config.group_title_icons?.[group] || "";
+    const color = this._config.group_title_colors?.[group] || "";
+  
+    return html`
+      <div class="custom-item">
+        <div class="section-title">${group}</div>
+  
+        ${this.renderIconPicker(
+          icon,
+          "Group title icon",
+          value => this.updateGroupTitleValue("group_title_icons", group, value)
+        )}
+  
+        ${this.renderTextForm(
+          color,
+          "Group title color",
+          value => this.updateGroupTitleValue("group_title_colors", group, value)
+        )}
+  
+        ${this.renderGroupTitleActionFields(group, "tap_action", "Tap action")}
+        ${this.renderGroupTitleActionFields(group, "double_tap_action", "Double tap action")}
+        ${this.renderGroupTitleActionFields(group, "hold_action", "Hold action")}
+      </div>
     `;
   }
 
@@ -439,6 +495,114 @@ class SpoolmanFilamentCardEditor extends LitElement {
         : ""}
 
       ${this.renderSwitch("show_group_title", "Show group title")}
+    `;
+  }
+
+  renderGroupTitleActionFields(group, actionKey, label) {
+    const groupActions = this._config.group_title_actions?.[group] || {};
+    const actionConfig = groupActions[actionKey] || { action: "none" };
+    const action = actionConfig.action || "none";
+  
+    return html`
+      ${this.renderSelect(
+        action,
+        label,
+        ACTION_OPTIONS,
+        value => {
+          const next = { action: value };
+  
+          if (value === "assist") {
+            next.pipeline_id = "preferred";
+            next.start_listening = true;
+          }
+  
+          this.updateGroupTitleAction(group, actionKey, next);
+        }
+      )}
+  
+      ${action === "navigate"
+        ? this.renderTextForm(
+            actionConfig.navigation_path || "",
+            "Navigation path",
+            value =>
+              this.updateGroupTitleAction(group, actionKey, {
+                ...actionConfig,
+                action,
+                navigation_path: value,
+              })
+          )
+        : ""}
+  
+      ${action === "url"
+        ? this.renderTextForm(
+            actionConfig.url_path || "",
+            "URL path",
+            value =>
+              this.updateGroupTitleAction(group, actionKey, {
+                ...actionConfig,
+                action,
+                url_path: value,
+              })
+          )
+        : ""}
+  
+      ${action === "call-service"
+        ? html`
+            <div class="hint">Service</div>
+  
+            <ha-service-picker
+              .hass=${this.hass}
+              .value=${actionConfig.service || ""}
+              @value-changed=${event =>
+                this.updateGroupTitleAction(group, actionKey, {
+                  ...actionConfig,
+                  action,
+                  service: event.detail.value,
+                })}
+            ></ha-service-picker>
+  
+            <div class="hint">Target entity</div>
+  
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${actionConfig.target?.entity_id || ""}
+              @value-changed=${event =>
+                this.updateGroupTitleAction(group, actionKey, {
+                  ...actionConfig,
+                  action,
+                  target: event.detail.value
+                    ? { entity_id: event.detail.value }
+                    : undefined,
+                })}
+            ></ha-entity-picker>
+          `
+        : ""}
+  
+      ${action === "assist"
+        ? html`
+            ${this.renderTextForm(
+              actionConfig.pipeline_id || "preferred",
+              "Pipeline ID",
+              value =>
+                this.updateGroupTitleAction(group, actionKey, {
+                  ...actionConfig,
+                  action,
+                  pipeline_id: value,
+                })
+            )}
+  
+            ${this.renderSwitchValue(
+              actionConfig.start_listening !== false,
+              "Start listening",
+              value =>
+                this.updateGroupTitleAction(group, actionKey, {
+                  ...actionConfig,
+                  action,
+                  start_listening: value,
+                })
+            )}
+          `
+        : ""}
     `;
   }
 
@@ -586,7 +750,42 @@ class SpoolmanFilamentCardEditor extends LitElement {
     }
     return html``;
   }
+
+  updateGroupTitleValue(configKey, group, value) {
+    const config = { ...this._config };
+    const values = { ...(config[configKey] || {}) };
   
+    if (value) {
+      values[group] = value;
+    } else {
+      delete values[group];
+    }
+  
+    config[configKey] = values;
+    this.setAndDispatchConfig(config);
+  }
+  
+  updateGroupTitleAction(group, actionKey, actionConfig) {
+    const config = { ...this._config };
+    const groupTitleActions = { ...(config.group_title_actions || {}) };
+    const groupActions = { ...(groupTitleActions[group] || {}) };
+  
+    if (!actionConfig || actionConfig.action === "none") {
+      delete groupActions[actionKey];
+    } else {
+      groupActions[actionKey] = actionConfig;
+    }
+  
+    if (Object.keys(groupActions).length) {
+      groupTitleActions[group] = groupActions;
+    } else {
+      delete groupTitleActions[group];
+    }
+  
+    config.group_title_actions = groupTitleActions;
+    this.setAndDispatchConfig(config);
+  }
+
   updateActionConfigValue(configKey, field, value) {
     const config = { ...this._config };
     const actionConfig = { ...(config[configKey] || {}) };
