@@ -9,13 +9,13 @@
 
 # Filament Card
 
-</td>
-</tr>
-</table>
-
 A modern and highly configurable Home Assistant Lovelace card for
 visualizing **filament**, **consumables**, and other resource-based
 entities.
+
+</td>
+</tr>
+</table>
 
 Originally built for **Spoolman**, the card has evolved into a flexible
 visualization card supporting multiple presets, rich customization, and
